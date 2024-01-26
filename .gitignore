@@ -1,3 +1,4 @@
 *.xl*
 __pycache__/
 .*/
+*.ipynb
