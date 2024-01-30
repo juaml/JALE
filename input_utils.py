@@ -31,7 +31,7 @@ def check_coordinates_are_numbers(df):
             print(f'Non-numeric Coordinates in column {coord_col}: {rows_with_errors.values + 2}')
 
     if all_coord_numbers_flag == False:
-        exit()
+        sys.exit()
     else:
         return df.reset_index(drop=True)
 
