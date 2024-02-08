@@ -18,8 +18,10 @@ def loaded_excel_base():
 def loaded_excel_concat():
     # Load the Excel file
     data_file = op.join(get_test_data_path(), "test_expinfo_concat.xlsx")
-    exp_info = pd.read_excel(data_file)
+    exp_info = pd.read_excel(data_file, converters={'tags':pd.eval})
     exp_info.dropna(inplace=True, how='all')
+    tmp_arr = np.load('tests/data/coordinates_mm.npz')
+    exp_info.Coordinates_mm = [tmp_arr['a'], tmp_arr['b'], tmp_arr['c']]
     return exp_info
 
 """Test load/concat/transform functions"""
@@ -63,4 +65,16 @@ def test_concat_coordinates(loaded_excel_base):
 
 def test_convert_tal_2_mni(loaded_excel_concat):
     exp_info = convert_tal_2_mni(loaded_excel_concat)
-    assert exp_info.Coordinates_mm[1][0] == np.array([10.,42.,27])
+    assert np.array_equal(exp_info.Coordinates_mm[1][0], np.array([6.,28.,36.]))
+
+def test_convert_2_voxel_space(loaded_excel_concat, capfd):
+    exp_info = transform_coordinates_to_voxel_space(loaded_excel_concat)
+    assert np.array_equal(exp_info.Coordinates[0][0], np.array([39,72,60]))
+    loaded_excel_concat.at[0,'Coordinates_mm'][0][0] = 500
+    exp_info = transform_coordinates_to_voxel_space(loaded_excel_concat)
+    out, err = capfd.readouterr()
+    assert out == "WARNING: Coordinate detected outside of Brain boundaries!\n"
+
+def test_create_tasks_table(loaded_excel_concat):
+    tasks = test_create_tasks_table(loaded_excel_concat)
+    as
