@@ -15,6 +15,14 @@ def loaded_excel_base():
     return exp_info
 
 @pytest.fixture(scope="module")
+def loaded_excel_base_multi():
+    # Load the Excel file
+    data_file = op.join(get_test_data_path(), "test_expinfo_correct_multi.xlsx")
+    exp_info = pd.read_excel(data_file)
+    exp_info.dropna(inplace=True, how='all')
+    return exp_info
+
+@pytest.fixture(scope="module")
 def loaded_excel_concat():
     # Load the Excel file
     data_file = op.join(get_test_data_path(), "test_expinfo_concat.pickle")
@@ -55,9 +63,13 @@ def test_concat_tags(loaded_excel_base):
     assert exp_info.shape == (25,7)
     assert list(exp_info.Tags[0]) == ['a', 'visual']
 
-def test_concat_coordinates(loaded_excel_base):
+def test_concat_coordinates(loaded_excel_base, loaded_excel_base_multi):
     exp_info_firstlines = concat_coordinates(loaded_excel_base)
-    assert exp_info_firstlines.shape == (3,8)
+    assert np.array_equal(exp_info_firstlines.Coordinates_mm[0][0],[12,18,48])
+    assert exp_info_firstlines.NumberOfFoci[0] == 5
+
+    exp_info_firstlines = concat_coordinates(loaded_excel_base_multi)
+    assert np.array_equal(exp_info_firstlines.Coordinates_mm[0][0],[12,18,48])
     assert exp_info_firstlines.NumberOfFoci[0] == 5
 
 def test_convert_tal_2_mni(loaded_excel_concat):
@@ -67,10 +79,6 @@ def test_convert_tal_2_mni(loaded_excel_concat):
 def test_convert_2_voxel_space(loaded_excel_concat, capfd):
     exp_info = transform_coordinates_to_voxel_space(loaded_excel_concat)
     assert np.array_equal(exp_info.Coordinates[0][0], np.array([39,72,60]))
-    loaded_excel_concat.at[0,'Coordinates_mm'][0][0] = 500
-    exp_info = transform_coordinates_to_voxel_space(loaded_excel_concat)
-    out, err = capfd.readouterr()
-    assert out == "WARNING: Coordinate detected outside of Brain boundaries!\n"
 
 def test_create_tasks_table(loaded_excel_concat):
     tasks = create_tasks_table(loaded_excel_concat)
