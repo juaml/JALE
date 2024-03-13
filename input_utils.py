@@ -36,26 +36,38 @@ def check_coordinates_are_numbers(df):
         return df.reset_index(drop=True)
 
 def concat_coordinates(exp_info):
-    article_rows = exp_info.index[exp_info['Articles'].notnull()].tolist()
-    end_of_articles = [x - 1 for x in article_rows]
-    end_of_articles.pop(0)
-    end_of_articles.append(exp_info.shape[0])
+    if exp_info['Articles'].isna().sum() == 0:
 
-    exp_info_firstlines = exp_info.loc[article_rows].reset_index(drop=True)
-    exp_info_firstlines = exp_info_firstlines.drop(['x','y','z'], axis=1)
+        exp_info_firstlines = exp_info.groupby('Articles').first().reset_index()
+        exp_info_firstlines['x'] = exp_info.groupby('Articles')['x'].apply(list).values
+        exp_info_firstlines['y'] = exp_info.groupby('Articles')['y'].apply(list).values
+        exp_info_firstlines['z'] = exp_info.groupby('Articles')['z'].apply(list).values
+        exp_info_firstlines['Coordinates_mm'] = exp_info_firstlines.apply(lambda row: np.array([row['x'], row['y'], row['z']]).T, axis=1)
+        exp_info_firstlines = exp_info_firstlines.drop(['x','y','z'], axis=1)
+        exp_info_firstlines['NumberOfFoci'] = exp_info_firstlines.apply(lambda row: row['Coordinates_mm'].shape[0], axis=1)
 
-    exp_info_firstlines['Coordinates_mm'] = np.nan
-    exp_info_firstlines['Coordinates_mm'] = exp_info_firstlines['Coordinates_mm'].astype(object)
-    exp_info_firstlines['NumberOfFoci'] = np.nan
+    else:
 
-    for i in range(len(article_rows)):
-        x = exp_info.loc[article_rows[i]:end_of_articles[i]].x.values
-        y = exp_info.loc[article_rows[i]:end_of_articles[i]].y.values
-        z = exp_info.loc[article_rows[i]:end_of_articles[i]].z.values
-        
-        coordinate_array = np.array((x,y,z)).T
-        exp_info_firstlines.at[i,'Coordinates_mm'] = coordinate_array
-        exp_info_firstlines.loc[i,'NumberOfFoci'] = len(x)
+        article_rows = exp_info.index[exp_info['Articles'].notnull()].tolist()
+        end_of_articles = [x - 1 for x in article_rows]
+        end_of_articles.pop(0)
+        end_of_articles.append(exp_info.shape[0])
+
+        exp_info_firstlines = exp_info.loc[article_rows].reset_index(drop=True)
+        exp_info_firstlines = exp_info_firstlines.drop(['x','y','z'], axis=1)
+
+        exp_info_firstlines['Coordinates_mm'] = np.nan
+        exp_info_firstlines['Coordinates_mm'] = exp_info_firstlines['Coordinates_mm'].astype(object)
+        exp_info_firstlines['NumberOfFoci'] = np.nan
+
+        for i in range(len(article_rows)):
+            x = exp_info.loc[article_rows[i]:end_of_articles[i]].x.values
+            y = exp_info.loc[article_rows[i]:end_of_articles[i]].y.values
+            z = exp_info.loc[article_rows[i]:end_of_articles[i]].z.values
+            
+            coordinate_array = np.array((x,y,z)).T
+            exp_info_firstlines.at[i,'Coordinates_mm'] = coordinate_array
+            exp_info_firstlines.loc[i,'NumberOfFoci'] = len(x)
     
     return exp_info_firstlines
 
@@ -65,24 +77,17 @@ def concat_tags(exp_info):
     return exp_info
 
 def convert_tal_2_mni(exp_info):
-    exp_info.loc[exp_info.CoordinateSpace == "TAL", "Coordinates_mm"] = exp_info[exp_info.CoordinateSpace == "TAL"].apply(
-            lambda row: tal2icbm_spm(row.Coordinates_mm), axis=1)
+    exp_info.loc[exp_info['CoordinateSpace'] == "TAL", "Coordinates_mm"] = exp_info[exp_info['CoordinateSpace'] == "TAL"].apply(
+            lambda row: tal2icbm_spm(row['Coordinates_mm']), axis=1)
     return exp_info
 
 def transform_coordinates_to_voxel_space(exp_info):
     padded_xyz = exp_info.apply(
-        lambda row: np.pad(row.Coordinates_mm, ((0,0),(0,1)), constant_values=[1]), axis=1).values
+        lambda row: np.pad(row['Coordinates_mm'], ((0,0),(0,1)), constant_values=[1]), axis=1).values
     exp_info['Coordinates'] = [np.ceil(np.dot(np.linalg.inv(affine), xyzmm.T))[:3].T.astype(int) for xyzmm in padded_xyz]
 
     thresholds = [91,109,91]
-    out_of_bounds_larger = exp_info.apply(lambda row: np.any(row.Coordinates > thresholds, axis=0), axis=1).values
-    out_of_bounds_larger = [i for sublist in out_of_bounds_larger for i in sublist]
-
-    out_of_bounds_smaller = exp_info.apply(lambda row: np.any(row.Coordinates < 0, axis=0), axis=1).values
-    out_of_bounds_smaller = [i for sublist in out_of_bounds_smaller for i in sublist]
-    
-    if (True in out_of_bounds_larger) or (True in out_of_bounds_smaller):
-        print('WARNING: Coordinate detected outside of Brain boundaries!')
+    exp_info['Coordinates'] = exp_info.apply(lambda row: np.minimum(row['Coordinates'], thresholds), axis=1)
     return exp_info
 
 def create_tasks_table(exp_info):
