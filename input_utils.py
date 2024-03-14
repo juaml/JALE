@@ -5,6 +5,7 @@ from tal2icbm_spm import tal2icbm_spm
 from template import affine
 
 def load_excel(filepath):
+    
     try:
         df = pd.read_excel(filepath)
     except FileNotFoundError:
@@ -17,9 +18,11 @@ def load_excel(filepath):
         print(f"An error occurred: {str(e)}")
         sys.exit()
     df.dropna(inplace=True, how='all')
+    
     return df
 
 def check_coordinates_are_numbers(df):
+    
     all_coord_numbers_flag = 1
     for coord_col in ['x', 'y', 'z']:
         coord_col_all_number_bool = pd.api.types.is_float_dtype(df[coord_col])
@@ -36,6 +39,7 @@ def check_coordinates_are_numbers(df):
         return df.reset_index(drop=True)
 
 def concat_coordinates(exp_info):
+    
     if exp_info['Articles'].isna().sum() == 0:
 
         exp_info_firstlines = exp_info.groupby('Articles').first().reset_index()
@@ -72,16 +76,21 @@ def concat_coordinates(exp_info):
     return exp_info_firstlines
 
 def concat_tags(exp_info):
+    
     exp_info['Tags'] = exp_info.apply(lambda row: row.iloc[6:].dropna().str.lower().str.strip().values, axis=1)
     exp_info = exp_info.drop(exp_info.iloc[:, 6:-1],axis = 1)
+    
     return exp_info
 
 def convert_tal_2_mni(exp_info):
+    
     exp_info.loc[exp_info['CoordinateSpace'] == "TAL", "Coordinates_mm"] = exp_info[exp_info['CoordinateSpace'] == "TAL"].apply(
             lambda row: tal2icbm_spm(row['Coordinates_mm']), axis=1)
+    
     return exp_info
 
 def transform_coordinates_to_voxel_space(exp_info):
+    
     padded_xyz = exp_info.apply(
         lambda row: np.pad(row['Coordinates_mm'], ((0,0),(0,1)), constant_values=[1]), axis=1).values
     exp_info['Coordinates'] = [np.ceil(np.dot(np.linalg.inv(affine), xyzmm.T))[:3].T.astype(int) for xyzmm in padded_xyz]
@@ -90,7 +99,17 @@ def transform_coordinates_to_voxel_space(exp_info):
     exp_info['Coordinates'] = exp_info.apply(lambda row: np.minimum(row['Coordinates'], thresholds), axis=1)
     return exp_info
 
+def calculate_gaussian_width(exp_info):
+    
+    template_uncertainty = 5.7/(2*np.sqrt(2/np.pi)) * np.sqrt(8*np.log(2))
+    subject_uncertainty = (11.6/(2*np.sqrt(2/np.pi)) * np.sqrt(8*np.log(2))) / np.sqrt(exp_info['Subjects'])
+    exp_info['Smoothing'] = np.sqrt(template_uncertainty**2 + subject_uncertainty)
+    
+    return exp_info
+
+
 def create_tasks_table(exp_info):
+    
     tasks = pd.DataFrame(columns=['Name', 'Num_Exp', 'Who', 'TotalSubjects', 'ExpIndex'])
     task_names, task_counts = np.unique(np.hstack(exp_info.Tags), return_counts=True)
     tasks.Name = task_names
