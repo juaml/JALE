@@ -20,7 +20,7 @@ class App(customtkinter.CTk):
         self.grid_rowconfigure((0, 1, 2), weight=1)
 
         # create sidebar frame with widgets
-        self.sidebar_frame = customtkinter.CTkFrame(self, width=140, corner_radius=0)
+        self.sidebar_frame = customtkinter.CTkFrame(self, width=500, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
         self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="CustomTkinter", font=customtkinter.CTkFont(size=20, weight="bold"))
