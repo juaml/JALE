@@ -2,7 +2,7 @@ import os
 import sys
 import pandas as pd
 import numpy as np
-from input_utils import *
+from core.utils.input_utils import *
 
 def read_experiment_info(filename):
     exp_info = load_excel(filepath=filename)

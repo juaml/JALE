@@ -1,6 +1,6 @@
 import customtkinter
 import pandas as pd
-from input_utils import load_excel
+from core.utils.input_utils import load_excel
 
 class Controller:
     def __init__(self, sidebar_frame, analysis_info_table, dataset_table):

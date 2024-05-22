@@ -1,6 +1,6 @@
 import customtkinter
 import tkinter
-from read_experiment_info import read_experiment_info
+from core.utils.read_experiment_info import read_experiment_info
 
 class DatasetTable(customtkinter.CTkFrame):
     def __init__(self, master):

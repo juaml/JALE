@@ -1,6 +1,6 @@
 import customtkinter
-from interface.parameter_window import AleParameterWindow
-from input_utils import load_excel
+from gui.parameter_window import ParameterWindow
+from gui.fonts.fonts import get_font
 
 class Sidebar_Frame(customtkinter.CTkFrame):
     def __init__(self, master, controller, corner_radius: int = 0):
@@ -19,7 +19,11 @@ class Sidebar_Frame(customtkinter.CTkFrame):
         self.import_dataset_button.grid(row=2, column=0, padx=20, pady=10)
 
         self.ale_parameters_button = customtkinter.CTkButton(master=self, text='ALE Parameters', command=self.ale_parameters_button_event)
-        self.ale_parameters_button.grid(row=4, column=0, padx=20, pady=10)
+        self.ale_parameters_button.grid(row=5, column=0, padx=20, pady=10)
+
+        custom_font = get_font(family='Cascadia Code', size=12)
+        self.parameters_text = customtkinter.CTkLabel(master=self, font=custom_font, text='Default parameter\nvalues are set\nautomatically.\nChanging parameters\nonly advised\nfor experts.', anchor='w', justify='left')
+        self.parameters_text.grid(row=4, column=0, padx=0, pady=10)
 
         self.run_analysis_button = customtkinter.CTkButton(master=self, text='Run Analysis', fg_color='green', command=self.run_analysis_button_event)
         self.run_analysis_button.grid(row=6, column=0, padx=20, pady=10,)
@@ -49,7 +53,7 @@ class Sidebar_Frame(customtkinter.CTkFrame):
 
     def ale_parameters_button_event(self):
         if self.parameter_window == None or not self.parameter_window.winfo_exists():
-            self.parameter_window = AleParameterWindow(self)
+            self.parameter_window = ParameterWindow(self)
         else:
             self.parameter_window.focus()
 

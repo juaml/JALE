@@ -1,8 +1,8 @@
 import sys
 import pandas as pd
 import numpy as np
-from tal2icbm_spm import tal2icbm_spm
-from template import affine
+from core.utils.tal2icbm_spm import tal2icbm_spm
+from core.utils.template import affine
 
 def load_excel(filepath):
     

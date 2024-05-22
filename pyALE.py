@@ -2,12 +2,11 @@ import tkinter
 import tkinter.messagebox
 from typing import Tuple
 import customtkinter
-from interface.parameter_window import AleParameterWindow
-from interface.sidebar_frame import Sidebar_Frame
-from interface.analysis_table import AnalysisInfoTable
-from interface.dataset_table import DatasetTable
-from interface.output_log_frame import OutputLogFrame
-from interface.controller import Controller
+from gui.sidebar_frame import Sidebar_Frame
+from gui.analysis_table import AnalysisInfoTable
+from gui.dataset_table import DatasetTable
+from gui.output_log_frame import OutputLogFrame
+from gui.controller import Controller
 
 
 
@@ -25,7 +24,7 @@ class App(customtkinter.CTk):
 
         self.sidebar_frame = Sidebar_Frame(self, controller=self, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=9, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure((3,5), weight=1)
+        self.sidebar_frame.grid_rowconfigure((3), weight=1)
 
         self.analysis_info_table = AnalysisInfoTable(self)
         self.analysis_info_table.grid(row=0, column=1, padx=10, pady=(10, 10), sticky='nsew')

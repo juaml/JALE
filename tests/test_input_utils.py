@@ -1,6 +1,6 @@
 import pytest
 import os.path as op
-from input_utils import *
+from core.utils.input_utils import *
 from tests.utils import get_test_data_path
 import pandas as pd
 
