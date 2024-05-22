@@ -1,6 +1,6 @@
 import customtkinter
 import tkinter
-from core.utils.read_experiment_info import read_experiment_info
+from core.utils.input import read_experiment_info
 
 class DatasetTable(customtkinter.CTkFrame):
     def __init__(self, master):
@@ -30,7 +30,7 @@ class DatasetTable(customtkinter.CTkFrame):
         self.scroll_table.grid_columnconfigure((0,1,2), weight=1)
 
     def fill_table(self, dataset_file):
-        exp_info, tasks = read_experiment_info(dataset_file)
+        exp_info, _ = read_experiment_info(dataset_file)
 
         for row in range(exp_info.shape[0]):
             row_content = exp_info.iloc[row]

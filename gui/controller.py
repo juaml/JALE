@@ -1,6 +1,6 @@
 import customtkinter
 import pandas as pd
-from core.utils.input_utils import load_excel
+from core.utils.input import load_excel
 
 class Controller:
     def __init__(self, sidebar_frame, analysis_info_table, dataset_table):
@@ -15,8 +15,7 @@ class Controller:
     def import_analysis_file(self):
         filename = customtkinter.filedialog.askopenfilename()
         if filename:
-            analysis_file = load_excel(filename)
-            self.analysis_info_table.fill_table(analysis_file)
+            self.analysis_info_table.fill_table(filename)
     
     def import_dataset(self):
         filename = customtkinter.filedialog.askopenfilename()

@@ -1,5 +1,6 @@
 import customtkinter
 import tkinter
+from core.utils.input import load_excel
 
 class AnalysisInfoTable(customtkinter.CTkFrame):
     def __init__(self, master):
@@ -27,7 +28,8 @@ class AnalysisInfoTable(customtkinter.CTkFrame):
         
         self.scroll_table.grid_columnconfigure((1,2), weight=1)
 
-    def fill_table(self, analysis_file):
+    def fill_table(self, filename):
+        analysis_file = load_excel(filename)
         for row in range(analysis_file.shape[0]):
             row_content = analysis_file.iloc[row]
 
