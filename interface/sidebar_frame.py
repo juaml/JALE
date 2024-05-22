@@ -1,19 +1,22 @@
 import customtkinter
 from interface.parameter_window import AleParameterWindow
+from input_utils import load_excel
 
 class Sidebar_Frame(customtkinter.CTkFrame):
-    def __init__(self, master, corner_radius: int = 0):
+    def __init__(self, master, controller, corner_radius: int = 0):
         super().__init__(master, corner_radius=corner_radius)
+        self.controller = controller
         self.parameter_window = None
 
         self.logo_label = customtkinter.CTkLabel(master=self, text="pyALE", anchor="w", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=(20,0), pady=(20, 10), sticky='ew')
 
-        self.import_dataset_button = customtkinter.CTkButton(master=self, text='Import Dataset', command=self.import_dataset_button_event)
-        self.import_dataset_button.grid(row=1, column=0, padx=20, pady=10)
 
-        self.import_analysis_file_button = customtkinter.CTkButton(master=self, text='Import Analysis File', command=self.import_analysis_file_button_event)
-        self.import_analysis_file_button.grid(row=2, column=0, padx=20, pady=10)
+        self.import_analysis_file_button = customtkinter.CTkButton(master=self, text='Import Analysis File')
+        self.import_analysis_file_button.grid(row=1, column=0, padx=20, pady=10)
+
+        self.import_dataset_button = customtkinter.CTkButton(master=self, text='Import Dataset')
+        self.import_dataset_button.grid(row=2, column=0, padx=20, pady=10)
 
         self.ale_parameters_button = customtkinter.CTkButton(master=self, text='ALE Parameters', command=self.ale_parameters_button_event)
         self.ale_parameters_button.grid(row=4, column=0, padx=20, pady=10)
@@ -43,15 +46,6 @@ class Sidebar_Frame(customtkinter.CTkFrame):
     def change_scaling_event(self, new_scaling: str):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
         customtkinter.set_widget_scaling(new_scaling_float)
-
-    def import_dataset_button_event(self):
-        filename = customtkinter.filedialog.askopenfilename()
-        print(filename)
-    
-    def import_analysis_file_button_event(self):
-        filename = customtkinter.filedialog.askopenfilename()
-        
-        print(filename)
 
     def ale_parameters_button_event(self):
         if self.parameter_window == None or not self.parameter_window.winfo_exists():
