@@ -18,6 +18,10 @@ def load_excel(filepath):
         print(f"An error occurred: {str(e)}")
         sys.exit()
     df.dropna(inplace=True, how='all')
+
+    current_column_names = df.columns.values
+    current_column_names[:6] = ['Articles', 'Subjects', 'x', 'y', 'z', 'CoordinateSpace']
+    df.columns = current_column_names
     
     return df
 
