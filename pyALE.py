@@ -1,13 +1,11 @@
-import tkinter
-import tkinter.messagebox
-from typing import Tuple
 import customtkinter
+import tkinter
 from gui.sidebar_frame import Sidebar_Frame
 from gui.analysis_table_frame import AnalysisTableFrame
 from gui.dataset_table_frame import DatasetTableFrame
-from gui.output_log_frame import OutputLogFrame
 from gui.output_frame import OutputFrame
 from gui.controller import Controller
+from assets.ascii_logo import ascii_logo
 
 
 
@@ -28,10 +26,10 @@ class App(customtkinter.CTk):
         self.sidebar_frame.grid_rowconfigure((3), weight=1)
 
         self.analysis_table_frame = AnalysisTableFrame(self)
-        self.analysis_table_frame.grid(row=0, column=1, padx=10, pady=(10, 10), sticky='nsew')
+        self.analysis_table_frame.grid(row=2, column=1, padx=10, pady=(10, 10), sticky='nsew')
 
         self.dataset_table_frame = DatasetTableFrame(self)
-        self.dataset_table_frame.grid(row=1, rowspan=2, column=1, padx=10, pady=(0, 10), sticky='nsew')
+        self.dataset_table_frame.grid(row=0, rowspan=2, column=1, padx=10, pady=(0, 10), sticky='nsew')
 
         self.output_log_frame = OutputFrame(self)
         self.output_log_frame.grid(row=0, column=2, rowspan=2, padx=(0,10), pady=(10, 10), sticky='nsew')

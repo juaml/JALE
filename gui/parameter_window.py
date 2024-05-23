@@ -54,9 +54,6 @@ class ParameterWindow(customtkinter.CTkToplevel):
         self.apply_button = customtkinter.CTkButton(self, text="Apply", command=self.apply_parameters)
         self.apply_button.grid(row=11, column=0, padx=20, pady=10)
 
-    def set_controller(self, controller):
-        self.controller = controller
-
     def validate_monte_carlo_iterations(self):
         valid = True
         try:
@@ -142,3 +139,26 @@ class ParameterWindow(customtkinter.CTkToplevel):
         self.apply_button.configure(fg_color="green")
         self.apply_button.configure(text='Applied')
         self.after(2000, lambda: self.apply_button.configure(fg_color='#20548c', text='Apply'))
+
+
+class ParameterWarningWindow(customtkinter.CTkToplevel):
+    def __init__(self, master, controller):
+        super().__init__(master)
+        self.controller = controller
+        self.title("WARNING!")
+        self.warning_label = customtkinter.CTkLabel(self, text="Default parameter values are set automatically.\nChanging parameters only advised for experts.", font=customtkinter.CTkFont(size=16))
+        self.warning_label.grid(row=0, column=0, columnspan=2, padx=20, pady=10)
+
+        self.understand_button = customtkinter.CTkButton(self, text='I understand.', command=self.understand_button_event)
+        self.understand_button.grid(row=1, column=0, padx=20, pady=10)
+
+        self.close_button = customtkinter.CTkButton(self, text='Close', command=self.close_button_event)
+        self.close_button.grid(row=1, column=1, padx=20, pady=10)
+
+
+    def understand_button_event(self):
+        self.controller.open_parameter_window()
+        self.destroy()
+    
+    def close_button_event(self):
+        self.destroy()

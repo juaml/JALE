@@ -1,18 +1,21 @@
 import customtkinter
-import tkinter as tk
+import tkinter
 import sys
+from art import *
 
 # CustomText widget for displaying the output
-class CustomText(tk.Text):
+class CustomText(tkinter.Text):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
-        self.configure(state=tk.DISABLED)
+        self.configure(state=tkinter.DISABLED)
+        custom_font = tkinter.font.Font(family="Helvetica", size=14)
+        self.configure(font=custom_font)
 
     def write(self, message):
-        self.configure(state=tk.NORMAL)
-        self.insert(tk.END, message)
-        self.configure(state=tk.DISABLED)
-        self.see(tk.END)
+        self.configure(state=tkinter.NORMAL)
+        self.insert(tkinter.END, message)
+        self.configure(state=tkinter.DISABLED)
+        self.see(tkinter.END)
 
     def flush(self):
         pass
@@ -42,7 +45,8 @@ class OutputFrame(customtkinter.CTkFrame):
         self.scrollbar.grid(row=0, column=1, sticky="ns")
         self.text_widget['yscrollcommand'] = self.scrollbar.set
 
-        self.redirect_stdout()
+        
+        #self.redirect_stdout()
 
     def redirect_stdout(self):
         sys.stdout = RedirectedStdout(self.text_widget)

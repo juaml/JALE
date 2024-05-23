@@ -1,28 +1,26 @@
 import customtkinter
-from gui.parameter_window import ParameterWindow
+from gui.parameter_window import ParameterWarningWindow, ParameterWindow
+from gui.add_analysis_window import AddAnalysisWindow
 from gui.fonts.fonts import get_font
 
 class Sidebar_Frame(customtkinter.CTkFrame):
     def __init__(self, master, corner_radius: int = 0):
         super().__init__(master, corner_radius=corner_radius)
+        self.add_analysis_window = None
         self.parameter_window = None
-
-        self.logo_label = customtkinter.CTkLabel(master=self, text="pyALE", anchor="w", font=customtkinter.CTkFont(size=20, weight="bold"))
-        self.logo_label.grid(row=0, column=0, padx=(20,0), pady=(20, 10), sticky='ew')
-
-
-        self.import_analysis_file_button = customtkinter.CTkButton(master=self, text='Import Analysis File', command=self.import_analysis_file_button_event)
-        self.import_analysis_file_button.grid(row=1, column=0, padx=20, pady=10)
+        self.parameter_warning_window = None
 
         self.import_dataset_button = customtkinter.CTkButton(master=self, text='Import Dataset', command=self.import_dataset_file_button_event)
-        self.import_dataset_button.grid(row=2, column=0, padx=20, pady=10)
+        self.import_dataset_button.grid(row=0, column=0, padx=20, pady=(20,10))
+
+        self.add_analysis_button = customtkinter.CTkButton(master=self, text='Add Analysis', command=self.add_analysis_button_event)
+        self.add_analysis_button.grid(row=1, column=0, padx=20, pady=10)
+
+        self.import_analysis_file_button = customtkinter.CTkButton(master=self, text='Import Analysis', command=self.import_analysis_file_button_event)
+        self.import_analysis_file_button.grid(row=2, column=0, padx=20, pady=10)
 
         self.ale_parameters_button = customtkinter.CTkButton(master=self, text='ALE Parameters', command=self.ale_parameters_button_event)
-        self.ale_parameters_button.grid(row=5, column=0, padx=20, pady=10)
-
-        custom_font = get_font(family='Cascadia Code', size=12)
-        self.parameters_text = customtkinter.CTkLabel(master=self, font=custom_font, text='Default parameter\nvalues are set\nautomatically.\nChanging parameters\nonly advised\nfor experts.', anchor='w', justify='left')
-        self.parameters_text.grid(row=4, column=0, padx=0, pady=10)
+        self.ale_parameters_button.grid(row=3, column=0, padx=20, pady=10)
 
         self.run_analysis_button = customtkinter.CTkButton(master=self, text='Run Analysis', fg_color='green4', hover_color='dark green' , command=self.run_analysis_button_event)
         self.run_analysis_button.grid(row=6, column=0, padx=20, pady=10,)
@@ -45,24 +43,36 @@ class Sidebar_Frame(customtkinter.CTkFrame):
 
     def set_controller(self, controller):
         self.controller = controller
-
-    def import_analysis_file_button_event(self):
-        filename = customtkinter.filedialog.askopenfilename()
-        if filename:
-            self.controller.load_analysis_file(filename)
-            print('Succesfully imported an analysis file.')
     
     def import_dataset_file_button_event(self):
         filename = customtkinter.filedialog.askopenfilename()
         if filename:
             self.controller.load_dataset_file(filename)
             print('Succesfully imported a meta-analysis dataset file.')
+            print('Enabled manually adding analyses.')
+            self.add_analysis_button.configure(state='normal')
+
+    def import_analysis_file_button_event(self):
+        filename = customtkinter.filedialog.askopenfilename()
+        if filename:
+            self.controller.load_analysis_file(filename)
+            print('Succesfully imported an analysis file.')
+
+    def add_analysis_button_event(self):
+        if self.add_analysis_window == None or not self.add_analysis_window.winfo_exists():
+            self.add_analysis_window = AddAnalysisWindow(self, self.controller.task_df)
+        else:
+            self.add_analysis_window.focus()
     
     def ale_parameters_button_event(self):
         if self.parameter_window == None or not self.parameter_window.winfo_exists():
-            self.parameter_window = ParameterWindow(self, self.controller)
+            if self.parameter_warning_window == None or not self.parameter_warning_window.winfo_exists():
+                self.parameter_warning_window = ParameterWarningWindow(self, self.controller)
         else:
-            self.parameter_window.focus()
+            self.parameter_warning_window.focus()
+    
+    def open_parameter_window(self):
+        self.parameter_window = ParameterWindow(self, self.controller)
 
     def run_analysis_button_event(self):
         self.controller.run_analysis()
