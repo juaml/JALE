@@ -3,8 +3,9 @@ import tkinter
 import tkinter.messagebox as messagebox
 
 class ParameterWindow(customtkinter.CTkToplevel):
-    def __init__(self, master):
+    def __init__(self, master, controller):
         super().__init__(master)
+        self.controller = controller
         self.title("ALE Parameters")
         self.grid_columnconfigure(0, weight=1)
 
@@ -20,15 +21,13 @@ class ParameterWindow(customtkinter.CTkToplevel):
         self.tfce_enabled_var = tkinter.BooleanVar(value=True)
         self.tfce_enabled_checkbox = customtkinter.CTkCheckBox(self, text="TFCE Enabled", variable=self.tfce_enabled_var)
         self.tfce_enabled_checkbox.grid(row=2, column=0, padx=20, pady=10, sticky="w")
+
         # Monte-carlo iterations textbox
         self.monte_carlo_iterations_label = customtkinter.CTkLabel(self, text="Monte-Carlo Iterations")
         self.monte_carlo_iterations_label.grid(row=3, column=0, padx=20, pady=(10, 0), sticky="w")
-        self.monte_carlo_iterations_textbox = customtkinter.CTkEntry(self, validate='focusout', validatecommand=self.validate_monte_carlo_iterations)
+        self.monte_carlo_iterations_textbox = customtkinter.CTkEntry(self)
         self.monte_carlo_iterations_textbox.insert(0, "5000")
         self.monte_carlo_iterations_textbox.grid(row=4, column=0, padx=20, pady=(0, 10), sticky="ew")
-
-        # Validate Monte Carlo iterations input
-        self.monte_carlo_iterations_textbox.bind("<FocusOut>", self.validate_monte_carlo_iterations())
 
         # cFWE cluster-forming threshold textbox (0.00001, 0.0001, 0.001, 0.005, 0.01)
         self.cfwe_threshold_label = customtkinter.CTkLabel(self, text="cFWE Cluster-Forming Threshold")
@@ -55,18 +54,81 @@ class ParameterWindow(customtkinter.CTkToplevel):
         self.apply_button = customtkinter.CTkButton(self, text="Apply", command=self.apply_parameters)
         self.apply_button.grid(row=11, column=0, padx=20, pady=10)
 
+    def set_controller(self, controller):
+        self.controller = controller
+
     def validate_monte_carlo_iterations(self):
+        valid = True
         try:
             value = int(self.monte_carlo_iterations_textbox.get())
             if value < 100 or value > 100000:
-                raise ValueError
+                messagebox.showerror("Invalid Input", "Monte Carlo iterations must be a whole number between 100 and 100,000.")
+                self.monte_carlo_iterations_textbox.delete(0, "end")
+                self.monte_carlo_iterations_textbox.insert(0, "5000")
+                valid = False
         except ValueError:
             messagebox.showerror("Invalid Input", "Monte Carlo iterations must be a whole number between 100 and 100,000.")
             self.monte_carlo_iterations_textbox.delete(0, "end")
             self.monte_carlo_iterations_textbox.insert(0, "5000")
+            valid = False
+        return valid
+        
+    def validate_cluster_forming_threshold(self):
+        valid = True
+        try:
+            value = float(self.cfwe_threshold_textbox.get())
+            if value < 0.00001 or value > 0.05:
+                messagebox.showerror("Invalid Input", "cFWE cluster forming threshold must be between 0.00001 and 0.05.")
+                self.cfwe_threshold_textbox.delete(0, "end")
+                self.cfwe_threshold_textbox.insert(0, "0.001")
+                valid = False
+        except ValueError:
+            messagebox.showerror("Invalid Input", "cFWE cluster forming threshold must be between 0.00001 and 0.05.")
+            self.cfwe_threshold_textbox.delete(0, "end")
+            self.cfwe_threshold_textbox.insert(0, "0.001")
+            valid = False
+        return valid
+        
+    def validate_subsampling_n(self):
+        try:
+            value = int(self.subsampling_n_textbox.get())
+            if value < 100 or value > 25000:
+                messagebox.showerror("Invalid Input", "IPA subsampling N must be a whole number between 100 and 25000.")
+                self.subsampling_n_textbox.delete(0, "end")
+                self.subsampling_n_textbox.insert(0, "2500")
+                return False
+        except ValueError:
+            messagebox.showerror("Invalid Input", "IPA subsampling N must be a whole number between 100 and 25000.")
+            self.subsampling_n_textbox.delete(0, "end")
+            self.subsampling_n_textbox.insert(0, "2500")
+            return False
+        
+    def validate_balanced_contrast_iterations(self):
+        valid = True
+        try:
+            value = int(self.balanced_contrast_textbox.get())
+            if value < 100 or value > 10000:
+                messagebox.showerror("Invalid Input", "Balanced contrast monte-carlo iterations must be a whole number between 100 and 10000.")
+                self.balanced_contrast_textbox.delete(0, "end")
+                self.balanced_contrast_textbox.insert(0, "1000")
+                valid = False
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Balanced contrast monte-carlo iterations must be a whole number between 100 and 10000.")
+            self.balanced_contrast_textbox.delete(0, "end")
+            self.balanced_contrast_textbox.insert(0, "1000")
+            valid = False
+        return valid
 
     def apply_parameters(self):
-    # Here you would implement the logic to apply the parameters to your calculations.
+        val_mc = self.validate_monte_carlo_iterations()
+        val_cft = self.validate_cluster_forming_threshold()
+        val_subn = self.validate_subsampling_n()
+        val_bci = self.validate_balanced_contrast_iterations()
+
+        if any([val_mc, val_cft, val_subn, val_bci]) == False:
+            return
+
+
         parameters = {
             "cutoff_prediction": self.cutoff_prediction_var.get(),
             "tfce_enabled": self.tfce_enabled_var.get(),
@@ -75,15 +137,8 @@ class ParameterWindow(customtkinter.CTkToplevel):
             "subsampling_n": int(self.subsampling_n_textbox.get()),
             "balanced_contrast_iterations": int(self.balanced_contrast_textbox.get())
         }
-        print("Applied parameters:", parameters)
-        # Add your logic to pass these parameters to your calculations
+        self.controller.handle_parameters(parameters)
 
-
-        '''
-        Cutoff prediction checkbox
-        TFCE enabled checkbox
-        Monte-carlo iterations slider (1000-10000)
-        cFWE cluster-forming threshold slider (0.00001, 0.0001, 0.001, 0.005, 0.01)
-        Subsampling N slider (500,1000,2500,5000,10000)
-        Balanced contrast monte-carlo iterations slider (500,1000,2000,3000,5000)
-        '''
+        self.apply_button.configure(fg_color="green")
+        self.apply_button.configure(text='Applied')
+        self.after(2000, lambda: self.apply_button.configure(fg_color='#20548c', text='Apply'))

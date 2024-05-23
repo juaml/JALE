@@ -3,8 +3,8 @@ import tkinter.messagebox
 from typing import Tuple
 import customtkinter
 from gui.sidebar_frame import Sidebar_Frame
-from gui.analysis_table import AnalysisInfoTable
-from gui.dataset_table import DatasetTable
+from gui.analysis_table_frame import AnalysisTableFrame
+from gui.dataset_table_frame import DatasetTableFrame
 from gui.output_log_frame import OutputLogFrame
 from gui.controller import Controller
 
@@ -22,20 +22,26 @@ class App(customtkinter.CTk):
         self.grid_columnconfigure((1,2), weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        self.sidebar_frame = Sidebar_Frame(self, controller=self, corner_radius=0)
+        self.sidebar_frame = Sidebar_Frame(self, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=9, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure((3), weight=1)
 
-        self.analysis_info_table = AnalysisInfoTable(self)
-        self.analysis_info_table.grid(row=0, column=1, padx=10, pady=(10, 10), sticky='nsew')
+        self.analysis_table_frame = AnalysisTableFrame(self)
+        self.analysis_table_frame.grid(row=0, column=1, padx=10, pady=(10, 10), sticky='nsew')
 
-        self.dataset_table = DatasetTable(self)
-        self.dataset_table.grid(row=1, rowspan=2, column=1, padx=10, pady=(0, 10), sticky='nsew')
+        self.dataset_table_frame = DatasetTableFrame(self)
+        self.dataset_table_frame.grid(row=1, rowspan=2, column=1, padx=10, pady=(0, 10), sticky='nsew')
 
-        self.analysis_log = OutputLogFrame(self, 'Analysis Log')
-        self.analysis_log.grid(row=0, column=2, rowspan=2, padx=(0,10), pady=(10, 10), sticky='nsew')
+        self.output_log_frame = OutputLogFrame(self, 'Analysis Log')
+        self.output_log_frame.grid(row=0, column=2, rowspan=2, padx=(0,10), pady=(10, 10), sticky='nsew')
 
-        self.controller = Controller(self.sidebar_frame, self.analysis_info_table, self.dataset_table)
+        self.controller = Controller(self.sidebar_frame, self.analysis_table_frame, self.dataset_table_frame, self.output_log_frame)
+        self.sidebar_frame.set_controller(self.controller)
+        self.analysis_table_frame.set_controller(self.controller)
+        self.dataset_table_frame.set_controller(self.controller)
+        self.output_log_frame.set_controller(self.controller)
+
+
 
 
 

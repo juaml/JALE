@@ -2,7 +2,7 @@ import customtkinter
 import tkinter
 from core.utils.input import read_experiment_info
 
-class DatasetTable(customtkinter.CTkFrame):
+class DatasetTableFrame(customtkinter.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
         self.grid_columnconfigure((0,1,2),weight=1)
@@ -29,11 +29,13 @@ class DatasetTable(customtkinter.CTkFrame):
         
         self.scroll_table.grid_columnconfigure((0,1,2), weight=1)
 
-    def fill_table(self, dataset_file):
-        exp_info, _ = read_experiment_info(dataset_file)
+    def set_controller(self, controller):
+        self.controller = controller
 
-        for row in range(exp_info.shape[0]):
-            row_content = exp_info.iloc[row]
+    def fill_table(self, dataset_df):
+
+        for row in range(dataset_df.shape[0]):
+            row_content = dataset_df.iloc[row]
 
             article = row_content.Articles
             label = customtkinter.CTkLabel(self.scroll_table, text=f"{article:^35}")

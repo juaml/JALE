@@ -2,7 +2,7 @@ import customtkinter
 import tkinter
 from core.utils.input import load_excel
 
-class AnalysisInfoTable(customtkinter.CTkFrame):
+class AnalysisTableFrame(customtkinter.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
         self.grid_columnconfigure((1,2), weight=1)
@@ -27,11 +27,13 @@ class AnalysisInfoTable(customtkinter.CTkFrame):
         self.scroll_table.grid(row=2, column=0, columnspan=3, sticky='nsew', padx=10, pady=10)
         
         self.scroll_table.grid_columnconfigure((1,2), weight=1)
+    
+    def set_controller(self, controller):
+        self.controller = controller
 
-    def fill_table(self, filename):
-        analysis_file = load_excel(filename)
-        for row in range(analysis_file.shape[0]):
-            row_content = analysis_file.iloc[row]
+    def fill_table(self, analysis_df):
+        for row in range(analysis_df.shape[0]):
+            row_content = analysis_df.iloc[row]
 
             analysis_type = row_content.iloc[0]
             label = customtkinter.CTkLabel(self.scroll_table, text=f"{analysis_type:^12}")

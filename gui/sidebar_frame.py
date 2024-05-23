@@ -3,19 +3,18 @@ from gui.parameter_window import ParameterWindow
 from gui.fonts.fonts import get_font
 
 class Sidebar_Frame(customtkinter.CTkFrame):
-    def __init__(self, master, controller, corner_radius: int = 0):
+    def __init__(self, master, corner_radius: int = 0):
         super().__init__(master, corner_radius=corner_radius)
-        self.controller = controller
         self.parameter_window = None
 
         self.logo_label = customtkinter.CTkLabel(master=self, text="pyALE", anchor="w", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=(20,0), pady=(20, 10), sticky='ew')
 
 
-        self.import_analysis_file_button = customtkinter.CTkButton(master=self, text='Import Analysis File')
+        self.import_analysis_file_button = customtkinter.CTkButton(master=self, text='Import Analysis File', command=self.import_analysis_file_button_event)
         self.import_analysis_file_button.grid(row=1, column=0, padx=20, pady=10)
 
-        self.import_dataset_button = customtkinter.CTkButton(master=self, text='Import Dataset')
+        self.import_dataset_button = customtkinter.CTkButton(master=self, text='Import Dataset', command=self.import_dataset_file_button_event)
         self.import_dataset_button.grid(row=2, column=0, padx=20, pady=10)
 
         self.ale_parameters_button = customtkinter.CTkButton(master=self, text='ALE Parameters', command=self.ale_parameters_button_event)
@@ -44,6 +43,17 @@ class Sidebar_Frame(customtkinter.CTkFrame):
         self.scaling_optionemenu.set("100%")
         self.scaling_optionemenu.grid(row=11, column=0, padx=20, pady=(10, 20))
 
+    def set_controller(self, controller):
+        self.controller = controller
+
+    def import_analysis_file_button_event(self):
+        filename = customtkinter.filedialog.askopenfilename()
+        self.controller.load_analysis_file(filename)
+
+    def import_dataset_file_button_event(self):
+        filename = customtkinter.filedialog.askopenfilename()
+        self.controller.load_dataset_file(filename)
+
     def change_appearance_mode_event(self, new_appearance_mode: str):
         customtkinter.set_appearance_mode(new_appearance_mode)
 
@@ -53,7 +63,7 @@ class Sidebar_Frame(customtkinter.CTkFrame):
 
     def ale_parameters_button_event(self):
         if self.parameter_window == None or not self.parameter_window.winfo_exists():
-            self.parameter_window = ParameterWindow(self)
+            self.parameter_window = ParameterWindow(self, self.controller)
         else:
             self.parameter_window.focus()
 

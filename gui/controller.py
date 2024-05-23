@@ -1,24 +1,30 @@
 import customtkinter
 import pandas as pd
-from core.utils.input import load_excel
+from core.utils.input import load_excel, read_experiment_info
 
 class Controller:
-    def __init__(self, sidebar_frame, analysis_info_table, dataset_table):
-        self.sidebar_frame = sidebar_frame
-        self.analysis_info_table = analysis_info_table
-        self.dataset_table = dataset_table
+    def __init__(self, sidebar_frame, analysis_table_frame, dataset_table_frame, output_log_frame):
+         # Frames
+         self.sidebar_frame = sidebar_frame
+         self.analysis_table_frame = analysis_table_frame
+         self.dataset_table_frame = dataset_table_frame
+         self.output_log_frame = output_log_frame
 
-        # Connect the button event to the controller method
-        self.sidebar_frame.import_analysis_file_button.configure(command=self.import_analysis_file)
-        self.sidebar_frame.import_dataset_button.configure(command=self.import_dataset)
+         # ALE objects
+         self.analysis_df = None
+         self.dataset_df = None
+         self.task_df = None
+         self.parameters = None
+         
 
-    def import_analysis_file(self):
-        filename = customtkinter.filedialog.askopenfilename()
-        if filename:
-            self.analysis_info_table.fill_table(filename)
-    
-    def import_dataset(self):
-        filename = customtkinter.filedialog.askopenfilename()
-        if filename:
-            self.dataset_table.fill_table(filename)
+    def load_analysis_file(self, filename):
+        self.analysis_df = load_excel(filename, type='analysis')
+        self.analysis_table_frame.fill_table(self.analysis_df)
+
+    def load_dataset_file(self, filename):
+        self.dataset_df, self.task_df = read_experiment_info(filename)
+        self.dataset_table_frame.fill_table(self.dataset_df)
+
+    def handle_parameters(self, parameters):
+            self.parameters = parameters
 

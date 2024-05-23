@@ -4,7 +4,7 @@ import numpy as np
 from core.utils.tal2icbm_spm import tal2icbm_spm
 from core.utils.template import affine
 
-def load_excel(filepath):
+def load_excel(filepath, type='analysis'):
     
     try:
         df = pd.read_excel(filepath)
@@ -19,9 +19,10 @@ def load_excel(filepath):
         sys.exit()
     df.dropna(inplace=True, how='all')
 
-    current_column_names = df.columns.values
-    current_column_names[:6] = ['Articles', 'Subjects', 'x', 'y', 'z', 'CoordinateSpace']
-    df.columns = current_column_names
+    if type == 'experiment':
+        current_column_names = df.columns.values
+        current_column_names[:6] = ['Articles', 'Subjects', 'x', 'y', 'z', 'CoordinateSpace']
+        df.columns = current_column_names
     
     return df
 
@@ -137,7 +138,7 @@ def create_tasks_table(exp_info):
     return tasks
 
 def read_experiment_info(filename):
-    exp_info = load_excel(filepath=filename)
+    exp_info = load_excel(filepath=filename, type='experiment')
     exp_info = check_coordinates_are_numbers(exp_info)
     exp_info = concat_tags(exp_info)
     exp_info = concat_coordinates(exp_info)
