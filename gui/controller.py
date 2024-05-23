@@ -1,5 +1,3 @@
-import customtkinter
-import pandas as pd
 from core.utils.input import load_excel, read_experiment_info
 
 class Controller:
@@ -28,3 +26,8 @@ class Controller:
     def handle_parameters(self, parameters):
             self.parameters = parameters
 
+    def run_analysis(self):
+        return
+    
+    def stop_analysis(self):
+        return

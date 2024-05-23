@@ -24,10 +24,10 @@ class Sidebar_Frame(customtkinter.CTkFrame):
         self.parameters_text = customtkinter.CTkLabel(master=self, font=custom_font, text='Default parameter\nvalues are set\nautomatically.\nChanging parameters\nonly advised\nfor experts.', anchor='w', justify='left')
         self.parameters_text.grid(row=4, column=0, padx=0, pady=10)
 
-        self.run_analysis_button = customtkinter.CTkButton(master=self, text='Run Analysis', fg_color='green', command=self.run_analysis_button_event)
+        self.run_analysis_button = customtkinter.CTkButton(master=self, text='Run Analysis', fg_color='green4', hover_color='dark green' , command=self.run_analysis_button_event)
         self.run_analysis_button.grid(row=6, column=0, padx=20, pady=10,)
 
-        self.stop_analysis_button = customtkinter.CTkButton(master=self, text='Stop Analysis', fg_color='red', command=self.stop_analysis_button_event)
+        self.stop_analysis_button = customtkinter.CTkButton(master=self, text='Stop Analysis', fg_color='red3', hover_color='red4', command=self.stop_analysis_button_event)
         self.stop_analysis_button.grid(row=7, column=0, padx=20, pady=10,)
 
         self.appearance_mode_label = customtkinter.CTkLabel(master=self, text="Appearance Mode:", anchor="w")
@@ -48,11 +48,29 @@ class Sidebar_Frame(customtkinter.CTkFrame):
 
     def import_analysis_file_button_event(self):
         filename = customtkinter.filedialog.askopenfilename()
-        self.controller.load_analysis_file(filename)
-
+        if filename:
+            self.controller.load_analysis_file(filename)
+            print('Succesfully imported an analysis file.')
+    
     def import_dataset_file_button_event(self):
         filename = customtkinter.filedialog.askopenfilename()
-        self.controller.load_dataset_file(filename)
+        if filename:
+            self.controller.load_dataset_file(filename)
+            print('Succesfully imported a meta-analysis dataset file.')
+    
+    def ale_parameters_button_event(self):
+        if self.parameter_window == None or not self.parameter_window.winfo_exists():
+            self.parameter_window = ParameterWindow(self, self.controller)
+        else:
+            self.parameter_window.focus()
+
+    def run_analysis_button_event(self):
+        self.controller.run_analysis()
+        return
+    
+    def stop_analysis_button_event(self):
+        self.controller.stop_analysis()
+        return
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         customtkinter.set_appearance_mode(new_appearance_mode)
@@ -61,14 +79,3 @@ class Sidebar_Frame(customtkinter.CTkFrame):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
         customtkinter.set_widget_scaling(new_scaling_float)
 
-    def ale_parameters_button_event(self):
-        if self.parameter_window == None or not self.parameter_window.winfo_exists():
-            self.parameter_window = ParameterWindow(self, self.controller)
-        else:
-            self.parameter_window.focus()
-
-    def run_analysis_button_event(self):
-        return
-    
-    def stop_analysis_button_event(self):
-        return

@@ -1,6 +1,7 @@
 import customtkinter
 import tkinter
 from core.utils.input import load_excel
+import numpy as np
 
 class AnalysisTableFrame(customtkinter.CTkFrame):
     def __init__(self, master):
@@ -32,6 +33,8 @@ class AnalysisTableFrame(customtkinter.CTkFrame):
         self.controller = controller
 
     def fill_table(self, analysis_df):
+        column1 = analysis_df.iloc[:,0].fillna('vs.')
+        analysis_df.iloc[:,0] = column1
         for row in range(analysis_df.shape[0]):
             row_content = analysis_df.iloc[row]
 
@@ -39,10 +42,10 @@ class AnalysisTableFrame(customtkinter.CTkFrame):
             label = customtkinter.CTkLabel(self.scroll_table, text=f"{analysis_type:^12}")
             label.grid(row=row, column=0, sticky='nsew', padx=(10,2), pady=10)
 
-            analysis_name = row_content[1]
-            label = customtkinter.CTkLabel(self.scroll_table, text=f"{analysis_name:^70}")
+            analysis_name = row_content.iloc[1]
+            label = customtkinter.CTkLabel(self.scroll_table, text=f"{analysis_name:^60}")
             label.grid(row=row, column=1, sticky='nsew', padx=(0,2), pady=10)
 
-            analysis_conditions = row_content[2:].dropna().str.lower().str.strip().values
+            analysis_conditions = row_content.iloc[2:].dropna().str.lower().str.strip().values
             label = customtkinter.CTkLabel(self.scroll_table, text=f"{analysis_conditions}")
             label.grid(row=row, column=2, sticky='nsew', padx=(0,10), pady=10)
