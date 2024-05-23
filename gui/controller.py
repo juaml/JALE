@@ -29,6 +29,8 @@ class Controller:
     def handle_parameters(self, parameters):
             self.parameters = parameters
 
+    # Add function that takes manually added analysis logic and sends it to analysis table frame
+
     def run_analysis(self):
         return
     

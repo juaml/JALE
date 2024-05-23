@@ -1,5 +1,5 @@
 import customtkinter
-import tkinter
+from gui.tooltip import ToolTip
 
 class AddAnalysisWindow(customtkinter.CTkToplevel):
     def __init__(self, master, task_df):
@@ -8,6 +8,10 @@ class AddAnalysisWindow(customtkinter.CTkToplevel):
         self.title("Specify ALE Analyses")
         self.grid_columnconfigure(0, weight=1)
 
+        self.create_widgets()
+        self.initial_state()
+
+    def create_widgets(self):
         self.analysis_type_label = customtkinter.CTkLabel(self, text="Analysis Type")
         self.analysis_type_label.grid(row=1, column=0, padx=10, pady=(10, 0), sticky='w')
         self.analysis_type = customtkinter.CTkOptionMenu(self, values=["Main Effect", "Intrastudy probablistic ALE", "Standard Contrast", "Balanced Contrast"],
@@ -20,149 +24,145 @@ class AddAnalysisWindow(customtkinter.CTkToplevel):
         self.analysis_name.grid(row=2, column=1, padx=10, pady=10, sticky='w')
 
         # Experiment Group1
-        self.tag1_label = customtkinter.CTkLabel(self, text="Tag1")
+        self.tag1_label = customtkinter.CTkLabel(self, text="Tag 1")
         self.tag1_label.grid(row=1, column=2, padx=10, pady=(10, 0), sticky='w')
-        self.tag1 = customtkinter.CTkOptionMenu(self, values=self.task_df.Name.values, command=self.tag_all_update_states)
+        self.tag1 = customtkinter.CTkOptionMenu(self, values=self.task_df.Name.values,
+                                                command=lambda value: self.tag_enable_add_button(group=1, selected_value=value))
         self.tag1.grid(row=2, column=2, padx=10, pady=10, sticky='w')
 
-        self.logic1 = customtkinter.CTkOptionMenu(self, values=['---','and','or','not'], state='disabled')
-        self.logic1.grid(row=2, column=3, padx=10, pady=10, sticky='w')
+        self.add_tag_button = customtkinter.CTkButton(self, text='+', command=lambda: self.add_tag_button_event(group=1), state='disabled')
+        self.add_tag_button.grid(row=2, column=3, padx=10, pady=10, sticky='w')
 
-        self.tag2_label = customtkinter.CTkLabel(self, text="Tag2")
-        self.tag2_label.grid(row=1, column=4, padx=10, pady=(10, 0), sticky='w')
-        self.tag2 = customtkinter.CTkOptionMenu(self, values=self.task_df.Name.values, state='disabled')
-        self.tag2.grid(row=2, column=4, padx=10, pady=10, sticky='w')
-
-        self.add_tag_button = customtkinter.CTkButton(self, text='+', command=self.add_tag_button_group1_event, state='disabled')
-        self.add_tag_button.grid(row=2, column=5, padx=10, pady=10, sticky='w')
+        self.tag_count_group1 = 1
 
         # Experiment Group2
         self.second_group_label = customtkinter.CTkLabel(self, text="2nd Effect")
-        self.second_group_label.grid(row=3, column=1, padx=10, pady=(10, 0), sticky='n')
-
-        self.tag1_group2 = customtkinter.CTkOptionMenu(self, values=self.task_df.Name.values, state='disabled')
+        self.second_group_label.grid(row=3, column=1, padx=10, pady=(10, 0))
+        self.tag1_group2 = customtkinter.CTkOptionMenu(self, values=self.task_df.Name.values[1:], state='disabled',
+                                                       command=lambda value: self.tag_enable_add_button(group=2, selected_value=value))
         self.tag1_group2.grid(row=3, column=2, padx=10, pady=10, sticky='w')
 
-        self.logic1_group2 = customtkinter.CTkOptionMenu(self, values=['---','and','or','not'], state='disabled')
-        self.logic1_group2.grid(row=3, column=3, padx=10, pady=10, sticky='w')
+        self.add_tag_button_group2 = customtkinter.CTkButton(self, text='+', command=lambda: self.add_tag_button_event(group=2), state='disabled')
+        self.add_tag_button_group2.grid(row=3, column=3, padx=10, pady=10, sticky='w')
 
-        self.tag2_group2 = customtkinter.CTkOptionMenu(self, values=self.task_df.Name.values, state='disabled')
-        self.tag2_group2.grid(row=3, column=4, padx=10, pady=10, sticky='w')
+        self.tag_count_group2 = 1
 
-        self.add_tag_button_group2 = customtkinter.CTkButton(self, text='+', command=self.add_tag_button_group2_event, state='disabled')
-        self.add_tag_button_group2.grid(row=3, column=5, padx=10, pady=10, sticky='w')
+        # Apply and Reset buttons
+        self.reset_button = customtkinter.CTkButton(self, text="Reset", command=self.reset_button_event, fg_color='red3', hover_color='red4')
+        self.reset_button.grid(row=5, column=1, padx=10, pady=10, sticky='e')
 
-        # Apply button
-        self.apply_button = customtkinter.CTkButton(self, text="Add Analysis", command=self.add_analysis)
-        self.apply_button.grid(row=4, column=0, padx=10, pady=10, sticky='w')
+        self.add_analysis_button = customtkinter.CTkButton(self, text="Add Analysis", command=self.add_analysis_button_event, fg_color='green4', hover_color='dark green')
+        self.add_analysis_button.grid(row=5, column=0, padx=10, pady=10, sticky='w')
 
-        # References to dynamically created widgets
-        self.logic2 = None
-        self.tag3_label = None
-        self.tag3 = None
-        self.remove_tag_button = None
+    def initial_state(self, group=[1,2]):
+        # Reset Experiment Group1
+        if 1 in group:
+            self.clear_group_widgets(1)
+            self.tag1.grid(row=2, column=2, padx=10, pady=10, sticky='w')
+            self.add_tag_button.grid(row=2, column=3, padx=10, pady=10, sticky='w')
+            self.tag_count_group1 = 1
 
-        self.logic2_group2 = None
-        self.tag3_group2 = None
-        self.remove_tag_button_group2 = None
+        # Reset Experiment Group2
+        if 2 in group:
+            self.clear_group_widgets(2)
+            self.tag1_group2.grid(row=3, column=2, padx=10, pady=10, sticky='w')
+            self.add_tag_button_group2.grid(row=3, column=3, padx=10, pady=10, sticky='w')
+            self.tag_count_group2 = 1
 
-    def set_controller(self, controller):
-        self.controller = controller
-
-    def tag_all_update_states(self, value):
-        if value == 'all':
-            self.logic1.configure(state='disabled')
-            self.tag2.configure(state='disabled')
-            self.add_tag_button.configure(state='disabled')
-            if self.logic2 and self.tag3:
-                self.logic2.configure(state='disabled')
-                self.tag3.configure(state='disabled')
-                self.remove_tag_button.configure(state='disabled')
+    def clear_group_widgets(self, group):
+        if group == 1:
+            widgets = self.grid_slaves(row=2)
+            self.tag_count_group1 = 1
         else:
-            self.logic1.configure(state='normal')
-            self.tag2.configure(state='normal')
-            self.add_tag_button.configure(state='normal')
-            if self.logic2 and self.tag3:
-                self.logic2.configure(state='normal')
-                self.tag3.configure(state='normal')
-                self.remove_tag_button.configure(state='normal')
+            widgets = self.grid_slaves(row=3)
+            self.tag_count_group2 = 1
 
+        for widget in widgets:
+            if isinstance(widget, customtkinter.CTkOptionMenu) and widget not in [self.analysis_type, self.tag1, self.tag1_group2]:
+                widget.destroy()
 
-    def add_tag_button_group1_event(self):
-        if self.tag3_label == None:
-            self.tag3_label = customtkinter.CTkLabel(self, text="Tag3")
-            self.tag3_label.grid(row=1, column=6, padx=10, pady=(10, 0), sticky='w')
-        
-        self.logic2 = customtkinter.CTkOptionMenu(self, values=['---','and','or','not'])
-        self.logic2.grid(row=2, column=5, padx=10, pady=10, sticky='w')
-        
-        self.tag3 = customtkinter.CTkOptionMenu(self, values=self.task_df.Name.values)
-        self.tag3.grid(row=2, column=6, padx=10, pady=10, sticky='w')
+        # Clear tag labels in the first row
+        for widget in self.grid_slaves(row=1):
+            if widget.cget("text") not in ['Analysis Type', 'Analysis Name', 'Tag 1']:
+                widget.destroy()
 
-        self.remove_tag_button = customtkinter.CTkButton(self, text='-', command=self.remove_tag_button_group1_event)
-        self.remove_tag_button.grid(row=2, column=7, padx=10, pady=10, sticky='w')
-
-    def remove_tag_button_group1_event(self):
-        self.logic2.destroy()
-        self.logic2 = None
-        if self.logic2_group2 == None:
-            self.tag3_label.destroy()
-            self.tag3_label = None
-        self.tag3.destroy()
-        self.tag3 = None
-        self.remove_tag_button.destroy()
-        self.remove_tag_button = None
-        self.add_tag_button = customtkinter.CTkButton(self, text='+', command=self.add_tag_button_group1_event)
-        self.add_tag_button.grid(row=2, column=5, padx=10, pady=10, sticky='w')
-
-
-    def add_tag_button_group2_event(self):
-        if self.tag3_label == None:
-            self.tag3_label = customtkinter.CTkLabel(self, text="Tag3")
-            self.tag3_label.grid(row=1, column=6, padx=10, pady=(10, 0), sticky='w')
-
-        self.logic2_group2 = customtkinter.CTkOptionMenu(self, values=['---','and','or','not'])
-        self.logic2_group2.grid(row=3, column=5, padx=10, pady=10, sticky='w')
-
-        self.tag3_group2 = customtkinter.CTkOptionMenu(self, values=self.task_df.Name.values)
-        self.tag3_group2.grid(row=3, column=6, padx=10, pady=10, sticky='w')
-
-        self.remove_tag_button_group2 = customtkinter.CTkButton(self, text='-', command=self.remove_tag_button_group2_event)
-        self.remove_tag_button_group2.grid(row=3, column=7, padx=10, pady=10, sticky='w')
-
-    def remove_tag_button_group2_event(self):
-        if self.logic2 == None:
-            self.tag3_label.destroy()
-            self.tag3_label = None
-        self.logic2_group2.destroy()
-        self.logic2_group2 = None
-        self.tag3_group2.destroy()
-        self.tag3_group2 = None
-        self.remove_tag_button_group2.destroy()
-        self.remove_tag_button_group2 = None
-        self.add_tag_button_group2 = customtkinter.CTkButton(self, text='+', command=self.add_tag_button_group2_event)
-        self.add_tag_button_group2.grid(row=3, column=5, padx=10, pady=10, sticky='w')
+    def tag_enable_add_button(self, group, selected_value):
+        if selected_value != 'all':
+            if group == 1:
+                self.add_tag_button.configure(state='normal')
+            if group == 2:
+                self.add_tag_button_group2.configure(state='normal')
+        else:
+            if group == 1:
+                self.add_tag_button.configure(state='disabled')
+                self.initial_state(group = [1])
+            if group == 2:
+                self.add_tag_button_group2.configure(state='disabled')
+                self.initial_state(group = [2])
 
     def update_group2_state(self, value):
-        if value in ["Standard Contrast", "Balanced Contrast"]:
-            self.tag1_group2.configure(state='normal')
-            self.logic1_group2.configure(state='normal')
-            self.tag2_group2.configure(state='normal')
-            self.add_tag_button_group2.configure(state='normal')
-            if self.logic2_group2 and self.tag3_group2:
-                self.logic2_group2.configure(state='normal')
-                self.tag3_group2.configure(state='normal')
-                self.remove_tag_button_group2(state='normal')
+        state = 'normal' if value in ["Standard Contrast", "Balanced Contrast"] else 'disabled'
+
+        widgets = self.grid_slaves(row=3)
+        for widget in widgets:
+            widget.configure(state=state)
+
+    def add_tag_button_event(self, group):
+        if group == 1:
+            tag_count = self.tag_count_group1
+            button = self.add_tag_button
         else:
-            self.tag1_group2.configure(state='disabled')
-            self.logic1_group2.configure(state='disabled')
-            self.tag2_group2.configure(state='disabled')
-            self.add_tag_button_group2.configure(state='disabled')
-            if self.logic2_group2 and self.tag3_group2:
-                self.logic2_group2.configure(state='disabled')
-                self.tag3_group2.configure(state='disabled')
-                self.remove_tag_button_group2.configure(state='disabled')
-    
-    def add_analysis(self):
-        return
-    
+            tag_count = self.tag_count_group2
+            button = self.add_tag_button_group2
+
+        # Determine current column of the button
+        info = button.grid_info()
+        current_column = info['column']
+
+        # Add logic and tag option menus
+        logic_label = customtkinter.CTkLabel(self, text=f"Logic Operator {tag_count}")
+        logic_label.grid(row=1, column=current_column, padx=10, pady=(10, 0), sticky='w')
+        logic_menu = customtkinter.CTkOptionMenu(self, values=['and', 'or', 'not'])
+        logic_menu.grid(row=info['row'], column=current_column, padx=10, pady=10, sticky='w')
+
+        tag_label = customtkinter.CTkLabel(self, text=f"Tag {tag_count + 1}")
+        tag_label.grid(row=1, column=current_column + 1, padx=10, pady=(10, 0), sticky='w')
+        tag_menu = customtkinter.CTkOptionMenu(self, values=self.task_df.Name.values[1:])
+        tag_menu.grid(row=info['row'], column=current_column + 1, padx=10, pady=10, sticky='w')
+
+        # Move button to the next column and limit to 3 logic fields and 4 tag fields
+        if tag_count <= 2:
+            button.grid(column=current_column + 2)
+
+        if group == 1:
+            self.tag_count_group1 += 1
+        else:
+            self.tag_count_group2 += 1
+
+    def reset_button_event(self):
+        self.initial_state()
+
+    def add_analysis_button_event(self):
+        analysis_data = {
+            "analysis_type": self.analysis_type.get(),
+            "analysis_name": self.analysis_name.get(),
+            "group1_logic": [self.tag1.get()]
+        }
+
+        # Collect group1 logic
+        for i in range(1, self.tag_count_group1):
+            logic = self.grid_slaves(row=2, column=3 + (i - 1) * 2)[0].get()
+            tag = self.grid_slaves(row=2, column=4 + (i - 1) * 2)[0].get()
+            analysis_data["group1_logic"].extend([logic, tag])
+
+        if self.analysis_type.get() in ["Standard Contrast", "Balanced Contrast"]:
+            analysis_data["group2_logic"] = [self.tag1_group2.get()]
+
+            # Collect group2 logic
+            for i in range(1, self.tag_count_group2):
+                logic = self.grid_slaves(row=3, column=3 + (i - 1) * 2)[0].get()
+                tag = self.grid_slaves(row=3, column=4 + (i - 1) * 2)[0].get()
+                analysis_data["group2_logic"].extend([logic, tag])
+
+        print(analysis_data)
+        # Add logic to handle the analysis_data dictionary
