@@ -2,19 +2,19 @@ import customtkinter
 from gui.tooltip import ToolTip
 
 class AddAnalysisWindow(customtkinter.CTkToplevel):
-    def __init__(self, master, task_df):
+    def __init__(self, master, controller):
         super().__init__(master)
-        self.task_df = task_df
+        self.resizable(False, False)
+        self.controller = controller
+        self.task_df = self.controller.task_df
         self.title("Specify ALE Analyses")
         self.grid_columnconfigure(0, weight=1)
-
         self.create_widgets()
-        self.initial_state()
 
     def create_widgets(self):
         self.analysis_type_label = customtkinter.CTkLabel(self, text="Analysis Type")
         self.analysis_type_label.grid(row=1, column=0, padx=10, pady=(10, 0), sticky='w')
-        self.analysis_type = customtkinter.CTkOptionMenu(self, values=["Main Effect", "Intrastudy probablistic ALE", "Standard Contrast", "Balanced Contrast"],
+        self.analysis_type = customtkinter.CTkOptionMenu(self, values=["Main Effect", "IPA", "Standard Contrast", "Balanced Contrast"],
                                                          command=self.update_group2_state)
         self.analysis_type.grid(row=2, column=0, padx=10, pady=10, sticky='w')
 
@@ -47,12 +47,18 @@ class AddAnalysisWindow(customtkinter.CTkToplevel):
 
         self.tag_count_group2 = 1
 
-        # Apply and Reset buttons
-        self.reset_button = customtkinter.CTkButton(self, text="Reset", command=self.reset_button_event, fg_color='red3', hover_color='red4')
-        self.reset_button.grid(row=5, column=1, padx=10, pady=10, sticky='e')
+        # Add analysis, import and reset buttons
+        self.reset_entry_button = customtkinter.CTkButton(self, text="Reset current Analysis", command=self.reset_entry_button_event)
+        self.reset_entry_button.grid(row=5, column=1, padx=10, pady=10, sticky='e')
+
+        self.reset_table_button = customtkinter.CTkButton(self, text="Reset Table", command=self.reset_table_button_event, fg_color='red3', hover_color='red4')
+        self.reset_table_button.grid(row=5, column=2, padx=10, pady=10, sticky='e')
 
         self.add_analysis_button = customtkinter.CTkButton(self, text="Add Analysis", command=self.add_analysis_button_event, fg_color='green4', hover_color='dark green')
-        self.add_analysis_button.grid(row=5, column=0, padx=10, pady=10, sticky='w')
+        self.add_analysis_button.grid(row=5, column=3, padx=10, pady=10, sticky='w')
+
+        self.import_analysis_file_button = customtkinter.CTkButton(master=self, text='Import Analysis', command=self.import_analysis_file_button_event)
+        self.import_analysis_file_button.grid(row=5, column=0, padx=10, pady=10)
 
     def initial_state(self, group=[1,2]):
         # Reset Experiment Group1
@@ -139,11 +145,14 @@ class AddAnalysisWindow(customtkinter.CTkToplevel):
         else:
             self.tag_count_group2 += 1
 
-    def reset_button_event(self):
+    def reset_entry_button_event(self):
         self.initial_state()
 
+    def reset_table_button_event(self):
+        self.controller.reset_analysis_table()
+
     def add_analysis_button_event(self):
-        analysis_data = {
+        analysis_parameters = {
             "analysis_type": self.analysis_type.get(),
             "analysis_name": self.analysis_name.get(),
             "group1_logic": [self.tag1.get()]
@@ -153,16 +162,23 @@ class AddAnalysisWindow(customtkinter.CTkToplevel):
         for i in range(1, self.tag_count_group1):
             logic = self.grid_slaves(row=2, column=3 + (i - 1) * 2)[0].get()
             tag = self.grid_slaves(row=2, column=4 + (i - 1) * 2)[0].get()
-            analysis_data["group1_logic"].extend([logic, tag])
+            analysis_parameters["group1_logic"].extend([logic, tag])
 
         if self.analysis_type.get() in ["Standard Contrast", "Balanced Contrast"]:
-            analysis_data["group2_logic"] = [self.tag1_group2.get()]
+            analysis_parameters["group2_logic"] = [self.tag1_group2.get()]
 
             # Collect group2 logic
             for i in range(1, self.tag_count_group2):
                 logic = self.grid_slaves(row=3, column=3 + (i - 1) * 2)[0].get()
                 tag = self.grid_slaves(row=3, column=4 + (i - 1) * 2)[0].get()
-                analysis_data["group2_logic"].extend([logic, tag])
+                analysis_parameters["group2_logic"].extend([logic, tag])
 
-        print(analysis_data)
+        self.controller.get_analysis_parameters(analysis_parameters)
         # Add logic to handle the analysis_data dictionary
+
+
+    def import_analysis_file_button_event(self):
+        filename = customtkinter.filedialog.askopenfilename()
+        if filename:
+            self.controller.load_analysis_file(filename)
+            print('Succesfully imported an analysis file.')

@@ -13,11 +13,8 @@ class Sidebar_Frame(customtkinter.CTkFrame):
         self.import_dataset_button = customtkinter.CTkButton(master=self, text='Import Dataset', command=self.import_dataset_file_button_event)
         self.import_dataset_button.grid(row=0, column=0, padx=20, pady=(20,10))
 
-        self.add_analysis_button = customtkinter.CTkButton(master=self, text='Add Analysis', command=self.add_analysis_button_event)
+        self.add_analysis_button = customtkinter.CTkButton(master=self, text='Edit Analysis', command=self.add_analysis_button_event)
         self.add_analysis_button.grid(row=1, column=0, padx=20, pady=10)
-
-        self.import_analysis_file_button = customtkinter.CTkButton(master=self, text='Import Analysis', command=self.import_analysis_file_button_event)
-        self.import_analysis_file_button.grid(row=2, column=0, padx=20, pady=10)
 
         self.ale_parameters_button = customtkinter.CTkButton(master=self, text='ALE Parameters', command=self.ale_parameters_button_event)
         self.ale_parameters_button.grid(row=3, column=0, padx=20, pady=10)
@@ -52,15 +49,9 @@ class Sidebar_Frame(customtkinter.CTkFrame):
             print('Enabled manually adding analyses.')
             self.add_analysis_button.configure(state='normal')
 
-    def import_analysis_file_button_event(self):
-        filename = customtkinter.filedialog.askopenfilename()
-        if filename:
-            self.controller.load_analysis_file(filename)
-            print('Succesfully imported an analysis file.')
-
     def add_analysis_button_event(self):
         if self.add_analysis_window == None or not self.add_analysis_window.winfo_exists():
-            self.add_analysis_window = AddAnalysisWindow(self, self.controller.task_df)
+            self.add_analysis_window = AddAnalysisWindow(self, self.controller)
         else:
             self.add_analysis_window.focus()
     

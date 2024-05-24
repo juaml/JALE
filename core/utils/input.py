@@ -5,9 +5,12 @@ from core.utils.tal2icbm_spm import tal2icbm_spm
 from core.utils.template import affine
 
 def load_excel(filepath, type='analysis'):
-    
+    if type == 'analysis':
+        header = None
+    if type == 'experiment':
+        header = 0
     try:
-        df = pd.read_excel(filepath)
+        df = pd.read_excel(filepath, header=header)
     except FileNotFoundError:
         print(f"File '{filepath}' not found.")
         sys.exit()

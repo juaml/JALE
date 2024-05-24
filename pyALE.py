@@ -25,14 +25,14 @@ class App(customtkinter.CTk):
         self.sidebar_frame.grid(row=0, column=0, rowspan=9, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure((3), weight=1)
 
-        self.analysis_table_frame = AnalysisTableFrame(self)
-        self.analysis_table_frame.grid(row=2, column=1, padx=10, pady=(10, 10), sticky='nsew')
-
         self.dataset_table_frame = DatasetTableFrame(self)
-        self.dataset_table_frame.grid(row=0, rowspan=2, column=1, padx=10, pady=(0, 10), sticky='nsew')
+        self.dataset_table_frame.grid(row=0, rowspan=2, column=1, padx=10, pady=(10, 15), sticky='nsew')
+
+        self.analysis_table_frame = AnalysisTableFrame(self)
+        self.analysis_table_frame.grid(row=2, column=1, padx=10, pady=(0, 10), sticky='nsew')
 
         self.output_log_frame = OutputFrame(self)
-        self.output_log_frame.grid(row=0, column=2, rowspan=2, padx=(0,10), pady=(10, 10), sticky='nsew')
+        self.output_log_frame.grid(row=0, rowspan=2, column=2, padx=(0,10), pady=(10, 10), sticky='nsew')
 
         self.controller = Controller(self.sidebar_frame, self.analysis_table_frame, self.dataset_table_frame, self.output_log_frame)
         self.sidebar_frame.set_controller(self.controller)

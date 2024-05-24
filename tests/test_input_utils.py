@@ -33,7 +33,7 @@ def loaded_excel_concat():
 
 def test_load_excel(tmp_path):
     data_file = op.join(get_test_data_path(), "test_expinfo_correct.xlsx")
-    loaded_df = load_excel(data_file)
+    loaded_df = load_excel(data_file, type='experiment')
     assert loaded_df.shape == (25,8)
 
     # Test loading a non-existent file
