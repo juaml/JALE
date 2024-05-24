@@ -58,15 +58,29 @@ class AnalysisTableFrame(customtkinter.CTkFrame):
             self.tree.delete(item)
 
     def fill_table(self, analysis_df):
-        # Clear all existing entries in the Treeview
         self.reset_table()
         # Insert new rows into the Treeview
         for row in analysis_df.itertuples(index=False):
-            analysis_type = self.analysis_type_abbreviation_dict[row[0]]
+            analysis_type = row[0]
+            if len(analysis_type) > 1:
+                analysis_type = self.analysis_type_abbreviation_dict[row[0]]
             self.tree.insert("", tk.END, values=(analysis_type, row[1], row[2], row[3]))
 
+    def format_file_logic(self, logic):
+        formatted_logic = []
+        logic_dict = {'+': 'and', '?': 'or', '-': 'not'}
+        for idx, element in enumerate(logic):
+            if len(element) > 1:
+                if idx > 0:
+                    logic_operator = logic_dict[element[0][0]]
+                    formatted_logic.append(logic_operator)
+                tag = element[1:]
+                formatted_logic.append(tag)
+            if element == '?':
+                formatted_logic[idx-1] = 'or'
+        return formatted_logic
+
     def format_imported_analysis_file(self, analysis_df):
-        self.reset_table()
         df_format = pd.DataFrame(columns=['analysis_type', 'analysis_name', 'group1_logic', 'group2_logic'])
         skip_row = False
         for row in range(analysis_df.shape[0]):
@@ -76,12 +90,18 @@ class AnalysisTableFrame(customtkinter.CTkFrame):
 
             analysis_type = analysis_df.iloc[row,0]
             if analysis_type in ['B','C']:
-                analysis_name = f"{analysis_df.iloc[row,1]} vs. {analysis_df.iloc[row+1,0]}"
-                group1_logic = analysis_df.iloc[row,2:].dropna().str.lower().str.strip().values
-                group2_logic = analysis_df.iloc[row+1,2:].dropna().str.lower().str.strip().values
-                new_row = pd.DataFrame([analysis_type, analysis_name, group1_logic, group2_logic])
+                analysis_name = f"{analysis_df.iloc[row,1]} vs. {analysis_df.iloc[row+1,1]}"
+                group1_logic = list(analysis_df.iloc[row,2:].dropna().str.lower().str.strip())
+                group1_logic = self.format_file_logic(group1_logic)
+                group2_logic = list(analysis_df.iloc[row+1,2:].dropna().str.lower().str.strip())
+                group2_logic = self.format_file_logic(group2_logic)
+                new_row = pd.DataFrame([{'analysis_type': analysis_type,'analysis_name': analysis_name,'group1_logic': group1_logic,'group2_logic': group2_logic}])
                 skip_row = True
             else:
                 analysis_name = analysis_df.iloc[row,1]
-                group1_logic = analysis_df.iloc[row,2:].dropna().str.lower().str.strip().values
-                self.tree.insert("", tk.END, values=(analysis_type, analysis_name, group1_logic, '----'))
+                group1_logic = list(analysis_df.iloc[row,2:].dropna().str.lower().str.strip())
+                group1_logic = self.format_file_logic(group1_logic)
+                new_row = pd.DataFrame([{'analysis_type': analysis_type,'analysis_name': analysis_name,'group1_logic': group1_logic,'group2_logic': '----'}])
+
+            df_format = pd.concat([df_format, new_row], ignore_index=True)
+        return df_format

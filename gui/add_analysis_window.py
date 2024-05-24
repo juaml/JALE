@@ -1,5 +1,4 @@
 import customtkinter
-from gui.tooltip import ToolTip
 
 class AddAnalysisWindow(customtkinter.CTkToplevel):
     def __init__(self, master, controller):
@@ -48,11 +47,8 @@ class AddAnalysisWindow(customtkinter.CTkToplevel):
         self.tag_count_group2 = 1
 
         # Add analysis, import and reset buttons
-        self.reset_entry_button = customtkinter.CTkButton(self, text="Reset current Analysis", command=self.reset_entry_button_event)
+        self.reset_entry_button = customtkinter.CTkButton(self, text="Reset Tags", command=self.reset_entry_button_event)
         self.reset_entry_button.grid(row=5, column=1, padx=10, pady=10, sticky='e')
-
-        self.reset_table_button = customtkinter.CTkButton(self, text="Reset Table", command=self.reset_table_button_event, fg_color='red3', hover_color='red4')
-        self.reset_table_button.grid(row=5, column=2, padx=10, pady=10, sticky='e')
 
         self.add_analysis_button = customtkinter.CTkButton(self, text="Add Analysis", command=self.add_analysis_button_event, fg_color='green4', hover_color='dark green')
         self.add_analysis_button.grid(row=5, column=3, padx=10, pady=10, sticky='w')
@@ -148,9 +144,6 @@ class AddAnalysisWindow(customtkinter.CTkToplevel):
     def reset_entry_button_event(self):
         self.initial_state()
 
-    def reset_table_button_event(self):
-        self.controller.reset_analysis_table()
-
     def add_analysis_button_event(self):
         analysis_parameters = {
             "analysis_type": self.analysis_type.get(),
@@ -180,5 +173,5 @@ class AddAnalysisWindow(customtkinter.CTkToplevel):
     def import_analysis_file_button_event(self):
         filename = customtkinter.filedialog.askopenfilename()
         if filename:
-            self.controller.load_analysis_file(filename)
+            self.controller.import_analysis_file(filename)
             print('Succesfully imported an analysis file.')

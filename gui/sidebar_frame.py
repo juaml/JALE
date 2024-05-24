@@ -11,10 +11,13 @@ class Sidebar_Frame(customtkinter.CTkFrame):
         self.parameter_warning_window = None
 
         self.import_dataset_button = customtkinter.CTkButton(master=self, text='Import Dataset', command=self.import_dataset_file_button_event)
-        self.import_dataset_button.grid(row=0, column=0, padx=20, pady=(20,10))
+        self.import_dataset_button.grid(row=0, column=0, padx=20, pady=(20,20))
 
-        self.add_analysis_button = customtkinter.CTkButton(master=self, text='Edit Analysis', command=self.add_analysis_button_event)
-        self.add_analysis_button.grid(row=1, column=0, padx=20, pady=10)
+        self.add_analysis_button = customtkinter.CTkButton(master=self, text='Add Analysis', command=self.add_analysis_button_event)
+        self.add_analysis_button.grid(row=1, column=0, padx=20, pady=(10,5))
+
+        self.reset_table_button = customtkinter.CTkButton(self, text="Reset Analysis", command=self.reset_table_button_event)
+        self.reset_table_button.grid(row=2, column=0, padx=10)
 
         self.ale_parameters_button = customtkinter.CTkButton(master=self, text='ALE Parameters', command=self.ale_parameters_button_event)
         self.ale_parameters_button.grid(row=3, column=0, padx=20, pady=10)
@@ -54,6 +57,10 @@ class Sidebar_Frame(customtkinter.CTkFrame):
             self.add_analysis_window = AddAnalysisWindow(self, self.controller)
         else:
             self.add_analysis_window.focus()
+
+    def reset_table_button_event(self):
+        self.controller.analysis_df = None
+        self.controller.reset_analysis_table()
     
     def ale_parameters_button_event(self):
         if self.parameter_window == None or not self.parameter_window.winfo_exists():

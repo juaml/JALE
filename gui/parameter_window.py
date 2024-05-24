@@ -134,7 +134,7 @@ class ParameterWindow(customtkinter.CTkToplevel):
             "subsampling_n": int(self.subsampling_n_textbox.get()),
             "balanced_contrast_iterations": int(self.balanced_contrast_textbox.get())
         }
-        self.controller.handle_parameters(parameters)
+        self.controller.get_ale_parameters(parameters)
 
         self.apply_button.configure(fg_color="green")
         self.apply_button.configure(text='Applied')
