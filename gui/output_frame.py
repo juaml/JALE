@@ -8,8 +8,8 @@ class CustomText(tkinter.Text):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         self.configure(state=tkinter.DISABLED)
-        custom_font = tkinter.font.Font(family="Helvetica", size=14)
-        self.configure(font=custom_font)
+        #custom_font = tkinter.font.Font(family="Helvetica", size=12)
+        #self.configure(font=custom_font)
 
     def write(self, message):
         self.configure(state=tkinter.NORMAL)
@@ -46,7 +46,7 @@ class OutputFrame(customtkinter.CTkFrame):
         self.text_widget['yscrollcommand'] = self.scrollbar.set
 
         
-        #self.redirect_stdout()
+        self.redirect_stdout()
 
     def redirect_stdout(self):
         sys.stdout = RedirectedStdout(self.text_widget)

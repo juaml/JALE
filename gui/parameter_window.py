@@ -138,6 +138,7 @@ class ParameterWindow(customtkinter.CTkToplevel):
 
         self.apply_button.configure(fg_color="green")
         self.apply_button.configure(text='Applied')
+        print('Changed ALE Parameters')
         self.after(2000, lambda: self.apply_button.configure(fg_color='#20548c', text='Apply'))
 
 

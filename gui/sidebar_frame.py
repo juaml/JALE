@@ -11,22 +11,25 @@ class Sidebar_Frame(customtkinter.CTkFrame):
         self.parameter_warning_window = None
 
         self.import_dataset_button = customtkinter.CTkButton(master=self, text='Import Dataset', command=self.import_dataset_file_button_event)
-        self.import_dataset_button.grid(row=0, column=0, padx=20, pady=(20,20))
+        self.import_dataset_button.grid(row=0, column=0, padx=20, pady=(20, 20))
 
-        self.add_analysis_button = customtkinter.CTkButton(master=self, text='Add Analysis', command=self.add_analysis_button_event)
-        self.add_analysis_button.grid(row=1, column=0, padx=20, pady=(10,5))
+        self.add_analysis_button = customtkinter.CTkButton(master=self, text='Add Analysis', command=self.add_analysis_button_event, state='disabled')
+        self.add_analysis_button.grid(row=1, column=0, padx=20, pady=(20, 5))
+        
+        self.save_analysis_button = customtkinter.CTkButton(master=self, text='Save Analysis', command=self.save_analysis_button_event, state='disabled')
+        self.save_analysis_button.grid(row=2, column=0, padx=20, pady=(5, 5))
 
-        self.reset_table_button = customtkinter.CTkButton(self, text="Reset Analysis", command=self.reset_table_button_event)
-        self.reset_table_button.grid(row=2, column=0, padx=10)
+        self.reset_table_button = customtkinter.CTkButton(self, text="Reset Analysis", command=self.reset_table_button_event, state='disabled')
+        self.reset_table_button.grid(row=3, column=0, padx=20, pady=(5, 5))
 
         self.ale_parameters_button = customtkinter.CTkButton(master=self, text='ALE Parameters', command=self.ale_parameters_button_event)
-        self.ale_parameters_button.grid(row=3, column=0, padx=20, pady=10)
+        self.ale_parameters_button.grid(row=4, column=0, padx=20, pady=10)
 
         self.run_analysis_button = customtkinter.CTkButton(master=self, text='Run Analysis', fg_color='green4', hover_color='dark green' , command=self.run_analysis_button_event)
-        self.run_analysis_button.grid(row=6, column=0, padx=20, pady=10,)
+        self.run_analysis_button.grid(row=6, column=0, padx=20, pady=10)
 
         self.stop_analysis_button = customtkinter.CTkButton(master=self, text='Stop Analysis', fg_color='red3', hover_color='red4', command=self.stop_analysis_button_event)
-        self.stop_analysis_button.grid(row=7, column=0, padx=20, pady=10,)
+        self.stop_analysis_button.grid(row=7, column=0, padx=20, pady=10)
 
         self.appearance_mode_label = customtkinter.CTkLabel(master=self, text="Appearance Mode:", anchor="w")
         self.appearance_mode_label.grid(row=8, column=0, padx=20, pady=(10, 0))
@@ -51,12 +54,17 @@ class Sidebar_Frame(customtkinter.CTkFrame):
             print('Succesfully imported a meta-analysis dataset file.')
             print('Enabled manually adding analyses.')
             self.add_analysis_button.configure(state='normal')
+            self.save_analysis_button.configure(state='normal')
+            self.reset_table_button.configure(state='normal')
 
     def add_analysis_button_event(self):
         if self.add_analysis_window == None or not self.add_analysis_window.winfo_exists():
             self.add_analysis_window = AddAnalysisWindow(self, self.controller)
         else:
             self.add_analysis_window.focus()
+
+    def save_analysis_button_event(self):
+        pass
 
     def reset_table_button_event(self):
         self.controller.analysis_df = None
