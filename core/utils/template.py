@@ -1,9 +1,10 @@
 import nibabel as nb
 import numpy as np
-import os
+from pathlib import Path
 
-path = os.path.abspath(__file__)
-template = nb.load(f"{path[:-11]}/mask/Grey10.nii")
+# Module loads grey matter mask and saves important characteristics like shape, etc.
+module_path = Path(__file__).resolve().parents[2]
+template = nb.load(module_path / "/mask/Grey10.nii")
 
 data = template.get_fdata()
 shape = data.shape
