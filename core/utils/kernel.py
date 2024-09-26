@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from utils import template
+from core.utils.template import PAD_SHAPE
 
 
 def kernel_calc(affine, fwhm, dims):
@@ -32,7 +32,7 @@ def kernel_conv(peaks, kernel):
     kernel_size = kernel.shape[0]  # Assuming kernel is a cubic shape
     pad = kernel_size // 2  # Padding based on kernel size
 
-    data = np.zeros(template.pad_shape)
+    data = np.zeros(PAD_SHAPE)
 
     # Iterate over peaks and apply kernel using maximum value at each location
     for peak in peaks:

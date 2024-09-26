@@ -2,6 +2,7 @@ import customtkinter
 import tkinter as tk
 from tkinter import ttk
 
+
 class DatasetTableFrame(customtkinter.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
@@ -15,7 +16,8 @@ class DatasetTableFrame(customtkinter.CTkFrame):
             fg_color="#477AA2",
             corner_radius=5
         )
-        self.lbl_title.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0,1))
+        self.lbl_title.grid(row=0, column=0, columnspan=2,
+                            sticky="ew", pady=(0, 1))
 
         self.tree_frame = customtkinter.CTkFrame(self)
         self.tree_frame.grid(row=1, column=0, sticky="nsew")
@@ -30,9 +32,11 @@ class DatasetTableFrame(customtkinter.CTkFrame):
         style = ttk.Style()
         style.configure("Treeview.Heading", anchor=tk.CENTER)
         style.configure("Treeview", rowheight=25, font=('Arial', 12))
-        style.layout("Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])  # Remove borders
+        # Remove borders
+        style.layout("Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
 
-        self.tree = ttk.Treeview(self.tree_frame, yscrollcommand=self.tree_scroll.set, style="Treeview")
+        self.tree = ttk.Treeview(
+            self.tree_frame, yscrollcommand=self.tree_scroll.set, style="Treeview")
         self.tree.grid(row=0, column=0, sticky="nsew")
 
         self.tree_scroll.config(command=self.tree.yview)
@@ -47,7 +51,8 @@ class DatasetTableFrame(customtkinter.CTkFrame):
         self.tree.heading("#0", text="", anchor=tk.CENTER)
         self.tree.heading("Author", text="Author", anchor=tk.CENTER)
         self.tree.heading("Subjects", text="Subjects", anchor=tk.CENTER)
-        self.tree.heading("Number of Foci", text="Number of Foci", anchor=tk.CENTER)
+        self.tree.heading("Number of Foci",
+                          text="Number of Foci", anchor=tk.CENTER)
 
     def set_controller(self, controller):
         self.controller = controller
@@ -59,5 +64,5 @@ class DatasetTableFrame(customtkinter.CTkFrame):
 
         # Insert new rows into the Treeview
         for row in dataset_df.itertuples(index=False):
-            self.tree.insert("", tk.END, values=(row.Articles, int(row.Subjects), row.NumberOfFoci))
-
+            self.tree.insert("", tk.END, values=(
+                row.Articles, int(row.Subjects), row.NumberOfFoci))

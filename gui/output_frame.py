@@ -1,15 +1,16 @@
 import customtkinter
 import tkinter
 import sys
-from art import *
 
 # CustomText widget for displaying the output
+
+
 class CustomText(tkinter.Text):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         self.configure(state=tkinter.DISABLED)
-        #custom_font = tkinter.font.Font(family="Helvetica", size=12)
-        #self.configure(font=custom_font)
+        # custom_font = tkinter.font.Font(family="Helvetica", size=12)
+        # self.configure(font=custom_font)
 
     def write(self, message):
         self.configure(state=tkinter.NORMAL)
@@ -21,6 +22,8 @@ class CustomText(tkinter.Text):
         pass
 
 # Redirect standard output to the CustomText widget
+
+
 class RedirectedStdout:
     def __init__(self, text_widget):
         self.text_widget = text_widget
@@ -32,6 +35,8 @@ class RedirectedStdout:
         pass
 
 # Frame to hold the CustomText widget
+
+
 class OutputFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
@@ -41,11 +46,11 @@ class OutputFrame(customtkinter.CTkFrame):
         self.text_widget = CustomText(self)
         self.text_widget.grid(row=0, column=0, sticky="nsew")
 
-        self.scrollbar = customtkinter.CTkScrollbar(self, command=self.text_widget.yview)
+        self.scrollbar = customtkinter.CTkScrollbar(
+            self, command=self.text_widget.yview)
         self.scrollbar.grid(row=0, column=1, sticky="ns")
         self.text_widget['yscrollcommand'] = self.scrollbar.set
 
-        
         self.redirect_stdout()
 
     def redirect_stdout(self):

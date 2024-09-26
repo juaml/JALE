@@ -35,12 +35,21 @@ class OutputLogFrame(customtkinter.CTkFrame):
             spacing3=4,  # spacing after a line / wrapped line
             cursor="arrow",
         )
-        self.txt_log.grid(row=1, column=0, padx=(15, 0), pady=(0, 15), sticky="nsew")
+        self.txt_log.grid(row=1,
+                          column=0,
+                          padx=(15, 0),
+                          pady=(0, 15),
+                          sticky="nsew")
         self.txt_log.configure(state=tkinter.DISABLED)
 
         # Scrollbar
-        self.scrollbar = customtkinter.CTkScrollbar(master=self, command=self.txt_log.yview)
-        self.scrollbar.grid(row=1, column=1, padx=(0, 15), pady=(0, 15), sticky="ns")
+        self.scrollbar = customtkinter.CTkScrollbar(
+            master=self, command=self.txt_log.yview)
+        self.scrollbar.grid(row=1,
+                            column=1,
+                            padx=(0, 15),
+                            pady=(0, 15),
+                            sticky="ns")
 
         # Connect textbox scroll event to scrollbar
         self.txt_log.configure(yscrollcommand=self.scrollbar.set)

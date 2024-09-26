@@ -4,15 +4,14 @@ import numpy as np
 import nibabel as nb
 import pickle
 from joblib import Parallel, delayed
-from core.utils.template import sample_space
 from core.utils.cutoff_prediction import predict_cutoff
+from core.utils.kernel import kernel_calc
 from core.utils.compute import (
     compute_ma, compute_ale, compute_z, compute_tfce, compute_clusters,
     compute_hx, compute_hx_conv, compute_null_cutoffs,
     generate_unique_subsamples, compute_sub_ale,
     plot_and_save, illustrate_foci
 )
-from core.utils.kernel import kernel_calc
 
 
 def main_effect(project_path,
@@ -84,7 +83,6 @@ def main_effect(project_path,
                     verbose=2
                 )(
                     delayed(compute_null_cutoffs)(
-                        sample_space=sample_space,
                         num_foci=exp_df.Coordinates,
                         kernels=exp_df.Kernels,
                         step=step,
@@ -206,7 +204,6 @@ def main_effect(project_path,
                         verbose=2
                     )(
                         delayed(compute_null_cutoffs)(
-                            sample_space=sample_space,
                             num_foci=exp_df.Coordinates,
                             kernels=exp_df.Kernels,
                             step=step,

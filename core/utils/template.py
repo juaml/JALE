@@ -7,11 +7,11 @@ module_path = Path(__file__).resolve().parents[2]
 template = nb.load(module_path / "/mask/Grey10.nii")
 
 data = template.get_fdata()
-shape = data.shape
-pad_shape = np.array([value+30 for value in shape])
+BRAIN_ARRAY_SHAPE = data.shape
+PAD_SHAPE = np.array([value+30 for value in BRAIN_ARRAY_SHAPE])
 
-prior = np.zeros(shape, dtype=bool)
-prior[data > 0.1] = 1
-sample_space = np.array(np.where(prior == 1))
+GM_PRIOR = np.zeros(BRAIN_ARRAY_SHAPE, dtype=bool)
+GM_PRIOR[data > 0.1] = 1
+GM_SAMPLE_SPACE = np.array(np.where(GM_PRIOR == 1))
 
-affine = template.affine
+MNI_AFFINE = template.affine
