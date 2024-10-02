@@ -2,11 +2,12 @@ import numpy as np
 import nibabel as nb
 from scipy import ndimage
 from scipy.stats import norm
-from joblib import Parallel, delayed
-from utils.tfce_par import tfce_par
-from utils.kernel import kernel_conv
 from scipy.special import comb
-from utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR, GM_SAMPLE_SPACE, MNI_AFFINE
+from joblib import Parallel, delayed
+from core.utils.tfce_par import tfce_par
+from core.utils.kernel import kernel_convolution
+from core.utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR, GM_SAMPLE_SPACE, MNI_AFFINE
+
 
 EPS = np.finfo(float).eps
 
@@ -27,8 +28,8 @@ def compute_ma(foci, kernels):
     ma = np.zeros(
         (len(kernels), BRAIN_ARRAY_SHAPE[0], BRAIN_ARRAY_SHAPE[1], BRAIN_ARRAY_SHAPE[2]))
     for i, kernel in enumerate(kernels):
-        ma[i, :] = kernel_conv(foci=foci[i],
-                               kernel=kernel)
+        ma[i, :] = kernel_convolution(foci=foci[i],
+                                      kernel=kernel)
 
     return ma
 
@@ -126,25 +127,31 @@ def compute_clusters(z, cluster_forming_threshold, cfwe_threshold=None):
 
 
 def compute_null_ale(num_foci, kernels):
-    null_foci = np.array([GM_SAMPLE_SPACE[:, np.random.randint(
-        0, GM_SAMPLE_SPACE.shape[1], num_peak)].T for num_peak in num_foci],
-        dtype=object)
+    null_foci = np.array([GM_SAMPLE_SPACE[:, np.random.randint(0,
+                                                               GM_SAMPLE_SPACE.shape[1],
+                                                               num_focus)].T for num_focus in num_foci],
+                         dtype=object)
     null_ma = compute_ma(null_foci, kernels)
     null_ale = compute_ale(null_ma)
 
     return null_ma, null_ale
 
 
-def compute_null_cutoffs(num_foci, kernels, step=10000,
-                         cluster_forming_threshold=0.001, target_n=None,
-                         hx_conv=None, bin_edges=None, bin_centers=None,
-                         tfce_enabled=True):
+def compute_monte_carlo_null(num_foci,
+                             kernels,
+                             bin_edges=None,
+                             bin_centers=None,
+                             step=10000,
+                             cluster_forming_threshold=0.001,
+                             target_n=None,
+                             hx_conv=None,
+                             tfce_enabled=True):
     if target_n:
-        s0 = np.random.permutation(np.arange(len(num_foci)))
-        s0 = s0[:target_n]
-        kernels = kernels.loc[s0]
-    # compute ALE values based on random peak locations sampled from a give sample_space
-    # sample space could be all grey matter or only foci reported in brainmap
+        subsample = np.random.permutation(np.arange(len(num_foci)))
+        subsample = subsample[:target_n]
+        num_foci = num_foci[subsample]
+        kernels = kernels[subsample]
+    # compute ALE values based on random peak locations sampled from grey matter
     null_ma, null_ale = compute_null_ale(num_foci, kernels)
     # Peak ALE threshold
     null_max_ale = np.max(null_ale)
@@ -156,9 +163,9 @@ def compute_null_cutoffs(num_foci, kernels, step=10000,
     _, null_max_cluster = compute_clusters(null_z, cluster_forming_threshold)
     null_max_tfce = 0
     if tfce_enabled:
-        tfce = compute_tfce(null_z)
+        null_tfce = compute_tfce(null_z)
         # TFCE threshold
-        null_max_tfce = np.max(tfce)
+        null_max_tfce = np.max(null_tfce)
 
     return null_max_ale, null_max_cluster, null_max_tfce
 
@@ -166,7 +173,9 @@ def compute_null_cutoffs(num_foci, kernels, step=10000,
 """ CV/Subsampling ALE Computations """
 
 
-def generate_unique_subsamples(total_n, target_n, sample_n):
+def generate_unique_subsamples(total_n,
+                               target_n,
+                               sample_n):
     # Calculate the maximum number of unique subsamples (combinations)
     max_combinations = int(comb(total_n, target_n, exact=True))
 
@@ -187,15 +196,40 @@ def generate_unique_subsamples(total_n, target_n, sample_n):
     return [np.array(subsample) for subsample in subsamples]
 
 
-def compute_sub_ale(sample, ma, hx, bin_centers,
-                    cfwe_threshold, step=10000, cluster_forming_threshold=0.001):
+def compute_sub_ale_single(ma,
+                           cfwe_threshold,
+                           bin_edges,
+                           bin_centers,
+                           step=10000,
+                           cluster_forming_threshold=0.001):
+    hx = compute_hx(ma, bin_edges)
     hx_conv = compute_hx_conv(hx, bin_centers, step)
-    ale = compute_ale(ma[sample])
+    ale = compute_ale(ma)
     z = compute_z(ale, hx_conv, step)
-    z, max_cluster = compute_clusters(
+    z, _ = compute_clusters(
         z, cluster_forming_threshold, cfwe_threshold=cfwe_threshold)
     z[z > 0] = 1
     return z
+
+
+def compute_sub_ale(samples,
+                    ma,
+                    cfwe_threshold,
+                    bin_edges,
+                    bin_centers,
+                    step=10000,
+                    cluster_forming_threshold=0.001):
+    ale_mean = np.zeros(BRAIN_ARRAY_SHAPE)
+    for idx, sample in enumerate(samples):
+        if idx % 500 == 0:
+            print(f"Calculated {idx} subsample ALEs")
+        ale_mean += compute_sub_ale_single(ma[sample],
+                                           cfwe_threshold,
+                                           bin_edges,
+                                           bin_centers,
+                                           step,
+                                           cluster_forming_threshold)
+    return ale_mean / len(samples)
 
 
 """ New Contrast Computations """
@@ -246,10 +280,10 @@ def compute_perm_diff(s, masked_ma):
     return perm_diff
 
 
-def compute_sig_diff(fx, mask, ale_diff, perm_diff, null_repeats, diff_thresh):
+def compute_sig_diff(fx, mask, ale_diff, perm_diff, monte_carlo_iterations, diff_thresh):
     n_bigger = [np.sum([diff[i] > ale_diff[i] for diff in perm_diff])
                 for i in range(mask.sum())]
-    prob_bigger = np.array([x / null_repeats for x in n_bigger])
+    prob_bigger = np.array([x / monte_carlo_iterations for x in n_bigger])
 
     z_null = norm.ppf(1-prob_bigger)  # z-value
     z_null[np.logical_and(np.isinf(z_null), z_null > 0)] = norm.ppf(1-EPS)
@@ -266,10 +300,10 @@ def compute_sig_diff(fx, mask, ale_diff, perm_diff, null_repeats, diff_thresh):
 """ Plot Utils """
 
 
-def plot_and_save(arr, img_folder=None, nii_folder=None):
+def plot_and_save(arr, nii_path=None):
     # Function that takes brain array and transforms it to NIFTI1 format
     # Saves it as a Nifti file
     arr_masked = arr
     arr_masked[GM_PRIOR == 0] = 0
     nii_img = nb.Nifti1Image(arr_masked, MNI_AFFINE)
-    nb.save(nii_img, nii_folder)
+    nb.save(nii_img, nii_path)

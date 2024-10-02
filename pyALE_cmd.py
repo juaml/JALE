@@ -1,25 +1,36 @@
-import numpy as np
 import sys
+import yaml
 from pathlib import Path
-from os.path import isfile, isdir
 from core.utils.input import read_experiment_info, load_excel
-from core.utils.exp_selection import compile_experiments
+from core.utils.compile_experiments import compile_experiments
 from core.utils.folder_setup import folder_setup
+from core.analyses.main_effect import main_effect
+from core.utils.contribution import contribution
 
-project_path = sys.argv[1]
+yaml_path = sys.argv[1]
+
+# Load settings from the YAML file
+with open(yaml_path, 'r') as file:
+    config = yaml.safe_load(file)
+
+# Accessing specific settings
+project_path = config['project']['path']
 project_path = Path(project_path).resolve()
-analysis_info_filename = sys.argv[2]
-experiment_info_filename = sys.argv[3]
+analysis_info_filename = config['project']['analysis_info']
+experiment_info_filename = config['project']['experiment_info']
 
-exp_all_df, tasks = read_experiment_info(
-    project_path / experiment_info_filename)
-analysis_df = load_excel(
-    project_path / analysis_info_filename, type='analysis')
+params = config['parameters']
+
+exp_all_df, tasks = read_experiment_info(project_path /
+                                         experiment_info_filename)
+analysis_df = load_excel(project_path /
+                         analysis_info_filename, type="analysis")
 
 for row_idx in range(analysis_df.shape[0]):
-    if analysis_df.iloc[row_idx, 0] is not str:
+    if type(analysis_df.iloc[row_idx, 0]) is not str:
         continue
-    if analysis_df.iloc[row_idx, 0] == 'M':  # Main Effect Analysis
+    if analysis_df.iloc[row_idx, 0] == "M":
+        # Main Effect Analysis
         print("Running Main-Effect Analysis")
         if not Path(project_path / "Results/MainEffect/Full").exists():
             folder_setup(project_path, "MainEffect_Full")
@@ -27,114 +38,43 @@ for row_idx in range(analysis_df.shape[0]):
         conditions = analysis_df.iloc[row_idx, 2:].dropna().to_list()
         exp_idxs, masks, mask_names = compile_experiments(conditions, tasks)
         exp_df = exp_all_df.loc[exp_idxs].reset_index(drop=True)
-        if len(exp_idxs) >= 12:
-            print(
-                f'{exp_name} : {len(exp_idxs)} experiments; average of {exp_df.Subjects.mean():.2f} subjects per experiment')
-            main_effect(exp_df, exp_name, tfce_enabled=tfce_enabled,
-                        cluster_thresh=cluster_thresh, null_repeats=null_repeats, nprocesses=nprocesses)
-            contribution(exp_df, exp_name, exp_idxs, tasks, tfce_enabled)
-        else:
-            print(f"{exp_name} : only {len(exp_idxs)} experiments - not analyzed!")
-
-        if len(masks) > 0:
-            print(f"{exp_name} - ROI analysis")
-            if not isdir("Results/MainEffect/ROI"):
-                folder_setup(path, "MainEffect_ROI")
-            with open(f"Results/MainEffect/Full/NullDistributions/{exp_name}_null.pickle", 'rb') as f:
-                null_ale, _, _, _ = pickle.load(f)
-            null_ale = np.stack(null_ale)
-            check_rois(exp_df, exp_name, masks, mask_names,
-                       null_repeats=null_repeats, null_ale=null_ale)
+        if len(exp_idxs) <= 17:
+            print("Analysis contains less than 18 Experiments."
+                  "Please interprete results carefully!")
+        print(f"{exp_name} : {len(exp_idxs)} experiments;"
+              f"average of {exp_df.Subjects.mean():.2f} subjects per experiment")
+        main_effect(project_path,
+                    exp_df,
+                    exp_name,
+                    tfce_enabled=params['tfce_enabled'],
+                    cutoff_predict_enabled=params['cutoff_predict_enabled'],
+                    bin_steps=params['bin_steps'],
+                    cluster_forming_threshold=params['cluster_forming_threshold'],
+                    monte_carlo_iterations=params['monte_carlo_iterations'],
+                    nprocesses=params['nprocesses'])
+        contribution(project_path,
+                     exp_df,
+                     exp_name,
+                     tasks,
+                     params['tfce_enabled'])
 
     if analysis_df.iloc[row_idx, 0][0] == "P":  # Probabilistic ALE
-        if not isdir("Results/MainEffect/CV"):
-            folder_setup(path, "MainEffect_CV")
+        if not Path(project_path /
+                    "Results/MainEffect/CV").exists():
+            folder_setup(project_path, "MainEffect_CV")
         exp_name = analysis_df.iloc[row_idx, 1]
         conditions = analysis_df.iloc[row_idx, 2:].dropna().to_list()
-        exp_idxs, _, _ = compile_studies(conditions, tasks)
-        exp_df = exp_all.loc[exp_idxs].reset_index(drop=True)
+        exp_idxs, _, _ = compile_experiments(conditions, tasks)
+        exp_df = exp_all_df.loc[exp_idxs].reset_index(drop=True)
         if len(analysis_df.iloc[row_idx, 0]) > 1:
             target_n = int(analysis_df.iloc[row_idx, 0][1:])
-            main_effect(exp_df, exp_name, null_repeats=null_repeats,
-                        target_n=target_n, sample_n=sample_n, nprocesses=nprocesses)
+            main_effect(project_path,
+                        exp_df,
+                        exp_name,
+                        target_n=target_n,
+                        monte_carlo_iterations=params['monte_carlo_iterations'],
+                        sample_n=params['subsample_n'],
+                        nprocesses=params['nprocesses'])
         else:
-            print(f"{exp_name}: need to specify subsampling")
+            print(f"{exp_name}: need to specify subsampling N")
             continue
-
-    if analysis_df.iloc[row_idx, 0] == 'C':  # Contrast Analysis
-        if not isdir("Results/Contrast/Full"):
-            folder_setup(path, "Contrast_Full")
-        if not isdir("Results/MainEffect/Full"):
-            folder_setup(path, "MainEffect_Full")
-        exp_names = [analysis_df.iloc[row_idx, 1],
-                     analysis_df.iloc[row_idx+1, 1]]
-        conditions = [analysis_df.iloc[row_idx, 2:].dropna().to_list(
-        ), analysis_df.iloc[row_idx+1, 2:].dropna().to_list()]
-        exp_idx1, masks, mask_names = compile_studies(conditions[0], tasks)
-        exp_idxs = [exp_idx1, compile_studies(conditions[1], tasks)[0]]
-        exp_dfs = [exp_all.loc[exp_idxs[0]].reset_index(
-            drop=True), exp_all.loc[exp_idxs[1]].reset_index(drop=True)]
-
-        if len(exp_idxs[0]) >= 12 and len(exp_idxs[1]) >= 12:
-            if not isfile(f"Results/MainEffect/Full/Volumes/Corrected/{exp_names[0]}_cFWE05.nii"):
-                main_effect(
-                    exp_dfs[0], exp_names[0], tfce_enabled=tfce_enabled, null_repeats=null_repeats)
-                contribution(exp_dfs[0], exp_names[0],
-                             exp_idxs[0], tasks, tfce_enabled=tfce_enabled)
-            if not isfile(f"Results/MainEffect/Full/Volumes/Corrected/{exp_names[1]}_cFWE05.nii"):
-                main_effect(
-                    exp_dfs[1], exp_names[1], tfce_enabled=tfce_enabled, null_repeats=null_repeats)
-                contribution(exp_dfs[1], exp_names[1],
-                             exp_idxs[1], tasks, tfce_enabled=tfce_enabled)
-
-            for i in reversed(exp_idxs[0]):
-                if i in exp_idxs[1]:
-                    exp_idxs[0].remove(i)
-                    exp_idxs[1].remove(i)
-
-            exp_dfs = [exp_all.loc[exp_idxs[0]].reset_index(
-                drop=True), exp_all.loc[exp_idxs[1]].reset_index(drop=True)]
-
-            legacy_contrast(exp_dfs, exp_names, diff_thresh=diff_thresh,
-                            null_repeats=null_repeats, masking=masking)
-
-            if len(masks) > 0:
-                print(f"{exp_names[0]} x {exp_names[1]} - ROI analysis")
-                if not isdir("Results/Contrast/ROI"):
-                    folder_setup(path, "Contrast_ROI")
-                check_rois(exp_dfs, exp_names, masks,
-                           mask_names, null_repeats=null_repeats)
-
-    if analysis_df.iloc[row_idx, 0][0] == 'B':  # Balanced Contrast Analysis:
-        if not isdir("Results/Contrast/Balanced"):
-            folder_setup(path, "Contrast_Balanced")
-        if not isdir("Results/MainEffect/CV"):
-            folder_setup(path, "MainEffect_CV")
-        exp_names = [analysis_df.iloc[row_idx, 1],
-                     analysis_df.iloc[row_idx+1, 1]]
-        conditions = [analysis_df.iloc[row_idx, 2:].dropna().to_list(
-        ), analysis_df.iloc[row_idx+1, 2:].dropna().to_list()]
-        exp_idx1, _, _ = compile_studies(conditions[0], tasks)
-        exp_idxs = [exp_idx1, compile_studies(conditions[1], tasks)[0]]
-        exp_dfs = [exp_all.loc[exp_idxs[0]].reset_index(
-            drop=True), exp_all.loc[exp_idxs[1]].reset_index(drop=True)]
-        n = [len(exp_idxs[0]), len(exp_idxs[1])]
-
-        if np.min(n) >= 19:
-
-            if len(analysis_df.iloc[row_idx, 0]) > 1:
-                target_n = int(analysis_df.iloc[row_idx, 0][1:])
-
-            else:
-                target_n = int(
-                    min(np.floor(np.mean((np.min(n), 17))), np.min(n)-2))
-
-            if not isfile(f'Results/MainEffect/CV/Volumes/{exp_names[0]}_{target_n}.nii'):
-                main_effect(exp_dfs[0], exp_names[0], null_repeats=null_repeats,
-                            target_n=target_n, sample_n=sample_n)
-            if not isfile(f'Results/MainEffect/CV/Volumes/{exp_names[1]}_{target_n}.nii'):
-                main_effect(exp_dfs[1], exp_names[1], null_repeats=null_repeats,
-                            target_n=target_n, sample_n=sample_n)
-
-            contrast(exp_dfs, exp_names, null_repeats=null_repeats,
-                     target_n=target_n, diff_repeats=diff_repeats)

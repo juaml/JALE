@@ -4,7 +4,7 @@ from pathlib import Path
 
 # Module loads grey matter mask and saves important characteristics like shape, etc.
 module_path = Path(__file__).resolve().parents[2]
-template = nb.load(module_path / "/mask/Grey10.nii")
+template = nb.load(module_path / "assets/mask/Grey10.nii")
 
 data = template.get_fdata()
 BRAIN_ARRAY_SHAPE = data.shape

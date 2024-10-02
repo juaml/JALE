@@ -4,13 +4,12 @@ import numpy as np
 import nibabel as nb
 import pickle
 from joblib import Parallel, delayed
+from core.utils.kernel import create_kernel_array
 from core.utils.cutoff_prediction import predict_cutoff
-from core.utils.kernel import kernel_calc
 from core.utils.compute import (
     compute_ma, compute_ale, compute_z, compute_tfce, compute_clusters,
-    compute_hx, compute_hx_conv, compute_null_cutoffs,
-    generate_unique_subsamples, compute_sub_ale,
-    plot_and_save, illustrate_foci
+    compute_hx, compute_hx_conv, compute_monte_carlo_null,
+    compute_sub_ale, generate_unique_subsamples, plot_and_save, illustrate_foci
 )
 
 
@@ -20,111 +19,93 @@ def main_effect(project_path,
                 tfce_enabled=True,
                 cutoff_predict_enabled=True,
                 bin_steps=0.0001,
-                cluster_thresh=0.001,
-                null_repeats=5000,
+                cluster_forming_threshold=0.001,
+                monte_carlo_iterations=5000,
                 target_n=None,
-                sample_n=None,
+                sample_n=2500,
                 nprocesses=2):
 
     # set main_effect results folder as path
-    project_path = project_path / "Results/MainEffect/"
-    project_path = Path(project_path).resolve()
+    project_path = (Path(project_path) / "Results/MainEffect").resolve()
 
     # calculate smoothing kernels for each experiment
-    kernels = np.empty((exp_df.shape[0], 31, 31, 31))
-    template_uncertainty = 5.7/(2*np.sqrt(2/np.pi)) * np.sqrt(8*np.log(2))
-    for i, n_subjects in enumerate(exp_df.Subjects.values):
-        subj_uncertainty = (11.6/(2*np.sqrt(2/np.pi)) *
-                            np.sqrt(8*np.log(2))) / np.sqrt(n_subjects)
-        smoothing = np.sqrt(template_uncertainty**2 + subj_uncertainty**2)
-        kernels[i, :, :] = kernel_calc(smoothing, 31)
+    kernels = create_kernel_array(exp_df)
 
     # calculate maximum possible ale value to set boundaries for histogram bins
-    max_ma = 1
-    for kernel in kernels:
-        max_ma = max_ma*(1-np.max(kernel))
+    max_ma = np.prod([1 - np.max(kernel) for kernel in kernels])
 
     # define bins for histogram
-    bin_edges = np.arange(0.00005, 1-max_ma+0.001, bin_steps)
-    bin_centers = np.arange(0, 1-max_ma+0.001, bin_steps)
-    step = int(1/bin_steps)
+    bin_edges = np.arange(0.00005, 1 - max_ma + 0.001, bin_steps)
+    bin_centers = np.arange(0, 1 - max_ma + 0.001, bin_steps)
+    step = int(1 / bin_steps)
 
-    # save included experiments for provenance tracking
-    print_df = pd.DataFrame(
-        [exp_df.Author.values, exp_df.NumberofFoci.values]).transpose()
-    print_df.columns = ["Experiment", "Number of Foci"]
-    print_df.to_csv(
-        project_path / f"{exp_name}_included_experiments.csv",
-        index=None,
-        mode="w",
-        sep="\t"
-    )
+    # Save included experiments for provenance tracking
+    print_df = pd.DataFrame({
+        "Experiment": exp_df.Articles.values,
+        "Number of Foci": exp_df.NumberOfFoci.values
+    })
+    print_df.to_csv(project_path /
+                    f"{exp_name}_included_experiments.csv", index=None, sep="\t")
 
     ma = compute_ma(exp_df.Coordinates.values, kernels)
-    hx = compute_hx(ma, bin_edges)
 
     if target_n:
-        # Probabilistic or cross-validated ALE
-
+        # subsampling or probabilistic ALE
         print(f"{exp_name} - entering probabilistic ALE routine.")
-
         # Check whether monte-carlo cutoff has been calculated before
         if Path(project_path /
-                f"CV/NullDistributions/{exp_name}_ccut_{target_n}.pickle").exists():
+                f"CV/NullDistributions/{exp_name}_montecarlo_{target_n}.pickle").exists():
             print(f"{exp_name} - loading cv cluster cut-off.")
             with open(project_path /
-                      f"/CV/NullDistributions/{exp_name}_ccut_{target_n}.pickle", "rb") as f:
-                cut_cluster = pickle.load(f)
+                      f"/CV/NullDistributions/{exp_name}_montecarlo_{target_n}.pickle", "rb") as f:
+                cfwe_null = pickle.load(f)
         else:
             print(f"{exp_name} - computing cv cluster cut-off.")
-            vfwe_null, cfwe_null, _ = zip(
+            _, cfwe_null, _ = zip(
                 *Parallel(
                     n_jobs=nprocesses,
                     verbose=2
                 )(
-                    delayed(compute_null_cutoffs)(
-                        num_foci=exp_df.Coordinates,
-                        kernels=exp_df.Kernels,
-                        step=step,
-                        cluster_thresh=cluster_thresh,
-                        bin_centers=bin_centers,
+                    delayed(compute_monte_carlo_null)(
+                        num_foci=exp_df.NumberOfFoci,
+                        kernels=kernels,
                         bin_edges=bin_edges,
+                        bin_centers=bin_centers,
+                        step=step,
+                        cluster_forming_threshold=cluster_forming_threshold,
                         target_n=target_n,
                         tfce_enabled=False
-                    ) for i in range(null_repeats)
+                    ) for i in range(monte_carlo_iterations)
                 )
             )
 
-            cut_cluster = np.percentile(cfwe_null, 95)
+            subsampling_cfwe_threshold = np.percentile(cfwe_null, 95)
             with open(project_path /
-                      f"CV/NullDistributions/{exp_name}_ccut_{target_n}.pickle", "wb") as f:
-                pickle.dump(cut_cluster, f)
+                      f"CV/NullDistributions/{exp_name}_montecarlo_{target_n}.pickle", "wb") as f:
+                pickle.dump(cfwe_null, f)
 
         print(f"{exp_name} - computing cv ale.")
+
         samples = generate_unique_subsamples(total_n=exp_df.shape[0],
                                              target_n=target_n,
-                                             sample_n=sample_n)
-        ale_mean = np.zeros((91, 109, 91))
-        for idx, sample in enumerate(samples):
-            if (idx % 500) == 0:
-                print(f"Calculated {idx} subsample ALEs")
-            ale_mean += compute_sub_ale(sample,
-                                        ma,
-                                        hx,
-                                        bin_centers,
-                                        cut_cluster,
-                                        thresh=cluster_thresh)
-        ale_mean = ale_mean / len(samples)
+                                             sample_n=sample_n
+                                             )
+        ale_mean = compute_sub_ale(samples,
+                                   ma,
+                                   subsampling_cfwe_threshold,
+                                   bin_edges,
+                                   bin_centers,
+                                   step,
+                                   cluster_forming_threshold)
         plot_and_save(ale_mean,
                       nii_path=project_path /
-                      "CV/Volumes/{exp_name}_sub_ale_{target_n}.nii")
+                      f"CV/Volumes/{exp_name}_sub_ale_{target_n}.nii")
 
         print(f"{exp_name} - probabilistic ALE done!")
         return
 
     else:
         # Full ALE
-
         # Foci illustration
         if not Path(project_path /
                     f"/Full/Volumes/Foci/{exp_name}.nii").exists():
@@ -133,7 +114,7 @@ def main_effect(project_path,
             foci_arr = illustrate_foci(exp_df.Coordinates.values)
             plot_and_save(foci_arr,
                           nii_path=project_path /
-                          f"Full/Volumes/Foci/{exp_name}.nii")
+                          f"Full/Volumes/{exp_name}_foci.nii")
 
         # ALE calculation
         if Path(project_path /
@@ -151,9 +132,10 @@ def main_effect(project_path,
             ale = compute_ale(ma)
             plot_and_save(ale,
                           nii_path=project_path /
-                          f"/Full/Volumes/{exp_name}_ale.nii")
+                          f"Full/Volumes/{exp_name}_ale.nii")
 
-            # Use the histograms from above to estimate a null probability density function
+            # Calculate histogram and use it to estimate a null probability density function
+            hx = compute_hx(ma, bin_edges)
             hx_conv = compute_hx_conv(hx, bin_centers, step)
 
             pickle_object = (hx_conv, hx)
@@ -163,10 +145,10 @@ def main_effect(project_path,
 
         # z- and tfce-map calculation
         if Path(project_path /
-                f"/Full/Volumes/{exp_name}_z.nii"):
-            print(f"{exp_name} - loading p-values & TFCE")
+                f"Full/Volumes/{exp_name}_z.nii").exists():
+            print(f"{exp_name} - loading z-values & TFCE")
             z = nb.load(project_path /
-                        f"/Full/Volumes/{exp_name}_z.nii").get_fdata()
+                        f"Full/Volumes/{exp_name}_z.nii").get_fdata()
 
         else:
             print(f"{exp_name} - computing p-values & TFCE")
@@ -175,14 +157,14 @@ def main_effect(project_path,
                           f"Full/Volumes/{exp_name}_z.nii")
         if tfce_enabled is True:
             if Path(project_path /
-                    f"/Full/Volumes/{exp_name}_tfce.nii"):
+                    f"Full/Volumes/{exp_name}_tfce_uncorrected.nii").exists():
                 tfce = nb.load(project_path /
-                               f"/Full/Volumes/{exp_name}_tfce.nii").get_fdata()
+                               f"Full/Volumes/{exp_name}_tfce_uncorrected.nii").get_fdata()
             else:
                 tfce = compute_tfce(z)
                 plot_and_save(tfce,
                               nii_path=project_path /
-                              f"Full/Volumes/{exp_name}_tfce.nii")
+                              f"Full/Volumes/{exp_name}_tfce_uncorrected.nii")
 
         # monte-carlo simulation for multiple comparison corrected thresholds
         if cutoff_predict_enabled:
@@ -191,7 +173,7 @@ def main_effect(project_path,
                 exp_df=exp_df)
         else:
             if Path(project_path /
-                    f"Full/NullDistributions/{exp_name}_montecarlo.pickle"):
+                    f"Full/NullDistributions/{exp_name}_montecarlo.pickle").exists():
                 print(f"{exp_name} - loading null")
                 with open(project_path /
                           f"Full/NullDistributions/{exp_name}_montecarlo.pickle", "rb") as f:
@@ -203,15 +185,15 @@ def main_effect(project_path,
                         n_jobs=nprocesses,
                         verbose=2
                     )(
-                        delayed(compute_null_cutoffs)(
-                            num_foci=exp_df.Coordinates,
-                            kernels=exp_df.Kernels,
-                            step=step,
-                            cluster_thresh=cluster_thresh,
-                            bin_centers=bin_centers,
+                        delayed(compute_monte_carlo_null)(
+                            num_foci=exp_df.NumberOfFoci,
+                            kernels=kernels,
                             bin_edges=bin_edges,
+                            bin_centers=bin_centers,
+                            step=step,
+                            cluster_forming_threshold=cluster_forming_threshold,
                             tfce_enabled=tfce_enabled
-                        ) for i in range(null_repeats)
+                        ) for i in range(monte_carlo_iterations)
                     )
                 )
                 simulation_pickle = (vfwe_null, cfwe_null, tfce_null)
@@ -219,13 +201,13 @@ def main_effect(project_path,
                           f"Full/NullDistributions/{exp_name}_montecarlo.pickle", "wb") as f:
                     pickle.dump(simulation_pickle, f)
 
-                vfwe_treshold = np.percentile(vfwe_null, 95)
-                cfwe_threshold = np.percentile(cfwe_null, 95)
-                tfce_threshold = np.percentile(tfce_null, 95)
+            vfwe_treshold = np.percentile(vfwe_null, 95)
+            cfwe_threshold = np.percentile(cfwe_null, 95)
+            tfce_threshold = np.percentile(tfce_null, 95)
 
-        # Tresholding maps with vFWE, cFWE, TFCE
+        # Tresholding maps with vFWE, cFWE, TFCE thresholds
         if not Path(project_path /
-                    f"/Full/Volumes/{exp_name}_vfwe.nii"):
+                    f"Full/Volumes/{exp_name}_vfwe.nii").exists():
             print(f"{exp_name} - inference and printing")
             # voxel wise family wise error correction
             vfwe_map = ale*(ale > vfwe_treshold)
@@ -238,11 +220,11 @@ def main_effect(project_path,
 
             # cluster wise family wise error correction
             cfwe_map, max_clust = compute_clusters(z,
-                                                   cluster_thresh=cluster_thresh,
-                                                   cut_cluster=cfwe_threshold)
+                                                   cluster_forming_threshold,
+                                                   cfwe_threshold)
             plot_and_save(cfwe_map,
                           nii_path=project_path /
-                          f"Full/Volumes/Corrected/{exp_name}_cFWE05.nii")
+                          f"Full/Volumes/{exp_name}_cFWE05.nii")
             print(
                 f"Min p-value for cFWE:{sum(cfwe_null>max_clust)/len(cfwe_null)}")
 
@@ -251,11 +233,10 @@ def main_effect(project_path,
                 tfce_map = tfce*(tfce > tfce_threshold)
                 plot_and_save(tfce_map,
                               nii_path=project_path /
-                              f"Full/Volumes/Corrected/{exp_name}_TFCE05.nii")
+                              f"Full/Volumes/{exp_name}_TFCE05.nii")
                 print(
                     f"Min p-value for TFCE:{sum(tfce_null>np.max(tfce))/len(tfce_null)}")
 
         else:
             pass
-
-        print(f"{exp_name} - done!")
+            print(f"{exp_name} - done!")
