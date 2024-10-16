@@ -15,7 +15,7 @@ from core.utils.compute import (
 
 def main_effect(project_path,
                 exp_df,
-                exp_name,
+                meta_name,
                 tfce_enabled=True,
                 cutoff_predict_enabled=True,
                 bin_steps=0.0001,
@@ -45,22 +45,23 @@ def main_effect(project_path,
         "Number of Foci": exp_df.NumberOfFoci.values
     })
     print_df.to_csv(project_path /
-                    f"{exp_name}_included_experiments.csv", index=None, sep="\t")
+                    f"{meta_name}_included_experiments.csv", index=None, sep="\t")
 
     ma = compute_ma(exp_df.Coordinates.values, kernels)
+    np.save(project_path / f'{meta_name}_ma', ma)
 
     if target_n:
         # subsampling or probabilistic ALE
-        print(f"{exp_name} - entering probabilistic ALE routine.")
+        print(f"{meta_name} - entering probabilistic ALE routine.")
         # Check whether monte-carlo cutoff has been calculated before
         if Path(project_path /
-                f"CV/NullDistributions/{exp_name}_montecarlo_{target_n}.pickle").exists():
-            print(f"{exp_name} - loading cv cluster cut-off.")
+                f"CV/NullDistributions/{meta_name}_montecarlo_{target_n}.pickle").exists():
+            print(f"{meta_name} - loading cv cluster cut-off.")
             with open(project_path /
-                      f"/CV/NullDistributions/{exp_name}_montecarlo_{target_n}.pickle", "rb") as f:
+                      f"/CV/NullDistributions/{meta_name}_montecarlo_{target_n}.pickle", "rb") as f:
                 cfwe_null = pickle.load(f)
         else:
-            print(f"{exp_name} - computing cv cluster cut-off.")
+            print(f"{meta_name} - computing cv cluster cut-off.")
             _, cfwe_null, _ = zip(
                 *Parallel(
                     n_jobs=nprocesses,
@@ -81,10 +82,10 @@ def main_effect(project_path,
 
             subsampling_cfwe_threshold = np.percentile(cfwe_null, 95)
             with open(project_path /
-                      f"CV/NullDistributions/{exp_name}_montecarlo_{target_n}.pickle", "wb") as f:
+                      f"CV/NullDistributions/{meta_name}_montecarlo_{target_n}.pickle", "wb") as f:
                 pickle.dump(cfwe_null, f)
 
-        print(f"{exp_name} - computing cv ale.")
+        print(f"{meta_name} - computing cv ale.")
 
         samples = generate_unique_subsamples(total_n=exp_df.shape[0],
                                              target_n=target_n,
@@ -99,40 +100,40 @@ def main_effect(project_path,
                                    cluster_forming_threshold)
         plot_and_save(ale_mean,
                       nii_path=project_path /
-                      f"CV/Volumes/{exp_name}_sub_ale_{target_n}.nii")
+                      f"CV/Volumes/{meta_name}_sub_ale_{target_n}.nii")
 
-        print(f"{exp_name} - probabilistic ALE done!")
+        print(f"{meta_name} - probabilistic ALE done!")
         return
 
     else:
         # Full ALE
         # Foci illustration
         if not Path(project_path /
-                    f"/Full/Volumes/Foci/{exp_name}.nii").exists():
-            print(f"{exp_name} - illustrate Foci")
+                    f"/Full/Volumes/Foci/{meta_name}.nii").exists():
+            print(f"{meta_name} - illustrate Foci")
             # take all peaks of included studies and save them in a Nifti
             foci_arr = illustrate_foci(exp_df.Coordinates.values)
             plot_and_save(foci_arr,
                           nii_path=project_path /
-                          f"Full/Volumes/{exp_name}_foci.nii")
+                          f"Full/Volumes/{meta_name}_foci.nii")
 
         # ALE calculation
         if Path(project_path /
-                f"Full/NullDistributions/{exp_name}.pickle").exists():
-            print(f"{exp_name} - loading ALE")
-            print(f"{exp_name} - loading null PDF")
+                f"Full/NullDistributions/{meta_name}.pickle").exists():
+            print(f"{meta_name} - loading ALE")
+            print(f"{meta_name} - loading null PDF")
             ale = nb.load(project_path /
-                          f"/Full/Volumes/{exp_name}_ale.nii").get_fdata()
+                          f"/Full/Volumes/{meta_name}_ale.nii").get_fdata()
             with open(project_path /
-                      f"/Full/NullDistributions/{exp_name}.pickle", "rb") as f:
+                      f"/Full/NullDistributions/{meta_name}.pickle", "rb") as f:
                 hx_conv, _ = pickle.load(f)
 
         else:
-            print(f"{exp_name} - computing ALE and null PDF")
+            print(f"{meta_name} - computing ALE and null PDF")
             ale = compute_ale(ma)
             plot_and_save(ale,
                           nii_path=project_path /
-                          f"Full/Volumes/{exp_name}_ale.nii")
+                          f"Full/Volumes/{meta_name}_ale.nii")
 
             # Calculate histogram and use it to estimate a null probability density function
             hx = compute_hx(ma, bin_edges)
@@ -140,31 +141,31 @@ def main_effect(project_path,
 
             pickle_object = (hx_conv, hx)
             with open(project_path /
-                      f"Full/NullDistributions/{exp_name}_histogram.pickle", "wb") as f:
+                      f"Full/NullDistributions/{meta_name}_histogram.pickle", "wb") as f:
                 pickle.dump(pickle_object, f)
 
         # z- and tfce-map calculation
         if Path(project_path /
-                f"Full/Volumes/{exp_name}_z.nii").exists():
-            print(f"{exp_name} - loading z-values & TFCE")
+                f"Full/Volumes/{meta_name}_z.nii").exists():
+            print(f"{meta_name} - loading z-values & TFCE")
             z = nb.load(project_path /
-                        f"Full/Volumes/{exp_name}_z.nii").get_fdata()
+                        f"Full/Volumes/{meta_name}_z.nii").get_fdata()
 
         else:
-            print(f"{exp_name} - computing p-values & TFCE")
+            print(f"{meta_name} - computing p-values & TFCE")
             z = compute_z(ale, hx_conv, step)
             plot_and_save(z, nii_path=project_path /
-                          f"Full/Volumes/{exp_name}_z.nii")
+                          f"Full/Volumes/{meta_name}_z.nii")
         if tfce_enabled is True:
             if Path(project_path /
-                    f"Full/Volumes/{exp_name}_tfce_uncorrected.nii").exists():
+                    f"Full/Volumes/{meta_name}_tfce_uncorrected.nii").exists():
                 tfce = nb.load(project_path /
-                               f"Full/Volumes/{exp_name}_tfce_uncorrected.nii").get_fdata()
+                               f"Full/Volumes/{meta_name}_tfce_uncorrected.nii").get_fdata()
             else:
                 tfce = compute_tfce(z)
                 plot_and_save(tfce,
                               nii_path=project_path /
-                              f"Full/Volumes/{exp_name}_tfce_uncorrected.nii")
+                              f"Full/Volumes/{meta_name}_tfce_uncorrected.nii")
 
         # monte-carlo simulation for multiple comparison corrected thresholds
         if cutoff_predict_enabled:
@@ -173,13 +174,13 @@ def main_effect(project_path,
                 exp_df=exp_df)
         else:
             if Path(project_path /
-                    f"Full/NullDistributions/{exp_name}_montecarlo.pickle").exists():
-                print(f"{exp_name} - loading null")
+                    f"Full/NullDistributions/{meta_name}_montecarlo.pickle").exists():
+                print(f"{meta_name} - loading null")
                 with open(project_path /
-                          f"Full/NullDistributions/{exp_name}_montecarlo.pickle", "rb") as f:
+                          f"Full/NullDistributions/{meta_name}_montecarlo.pickle", "rb") as f:
                     vfwe_null, cfwe_null, tfce_null = pickle.load(f)
             else:
-                print(f"{exp_name} - simulating null")
+                print(f"{meta_name} - simulating null")
                 vfwe_null, cfwe_null, tfce_null = zip(
                     *Parallel(
                         n_jobs=nprocesses,
@@ -198,7 +199,7 @@ def main_effect(project_path,
                 )
                 simulation_pickle = (vfwe_null, cfwe_null, tfce_null)
                 with open(project_path /
-                          f"Full/NullDistributions/{exp_name}_montecarlo.pickle", "wb") as f:
+                          f"Full/NullDistributions/{meta_name}_montecarlo.pickle", "wb") as f:
                     pickle.dump(simulation_pickle, f)
 
             vfwe_treshold = np.percentile(vfwe_null, 95)
@@ -207,13 +208,13 @@ def main_effect(project_path,
 
         # Tresholding maps with vFWE, cFWE, TFCE thresholds
         if not Path(project_path /
-                    f"Full/Volumes/{exp_name}_vfwe.nii").exists():
-            print(f"{exp_name} - inference and printing")
+                    f"Full/Volumes/{meta_name}_vfwe.nii").exists():
+            print(f"{meta_name} - inference and printing")
             # voxel wise family wise error correction
             vfwe_map = ale*(ale > vfwe_treshold)
             plot_and_save(vfwe_map,
                           nii_path=project_path /
-                          f"Full/Volumes/{exp_name}_vFWE05.nii")
+                          f"Full/Volumes/{meta_name}_vFWE05.nii")
             print(
                 f"Min p-value for FWE: {sum(vfwe_null > np.max(ale)) / len(vfwe_null)}"
             )
@@ -224,7 +225,7 @@ def main_effect(project_path,
                                                    cfwe_threshold)
             plot_and_save(cfwe_map,
                           nii_path=project_path /
-                          f"Full/Volumes/{exp_name}_cFWE05.nii")
+                          f"Full/Volumes/{meta_name}_cFWE05.nii")
             print(
                 f"Min p-value for cFWE:{sum(cfwe_null>max_clust)/len(cfwe_null)}")
 
@@ -233,10 +234,10 @@ def main_effect(project_path,
                 tfce_map = tfce*(tfce > tfce_threshold)
                 plot_and_save(tfce_map,
                               nii_path=project_path /
-                              f"Full/Volumes/{exp_name}_TFCE05.nii")
+                              f"Full/Volumes/{meta_name}_TFCE05.nii")
                 print(
                     f"Min p-value for TFCE:{sum(tfce_null>np.max(tfce))/len(tfce_null)}")
 
         else:
             pass
-            print(f"{exp_name} - done!")
+            print(f"{meta_name} - done!")

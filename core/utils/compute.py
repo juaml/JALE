@@ -232,69 +232,29 @@ def compute_sub_ale(samples,
     return ale_mean / len(samples)
 
 
-""" New Contrast Computations """
-
-
-def compute_ale_diff(s, ma_maps, prior, target_n=None):
-    ale = np.zeros((2, prior.sum()))
-    for xi in (0, 1):
-        if target_n:
-            s_perm = np.random.permutation(s[xi])
-            s_perm = s_perm[:target_n]
-            ale[xi, :] = compute_ale(ma_maps[xi][:, prior][s_perm, :])
-        else:
-            ale[xi, :] = compute_ale(ma_maps[xi][:, prior])
-    r_diff = ale[0, :] - ale[1, :]
-    return r_diff
-
-
-def compute_null_diff(s, prior, exp_dfs, target_n=None, diff_repeats=1000):
-    prior_idxs = np.argwhere(prior > 0)
-    null_ma = []
-    for xi in (0, 1):
-        null_foci = np.array([prior_idxs[np.random.randint(
-            0, prior_idxs.shape[0], exp_dfs[xi].foci[i]), :] for i in s[xi]], dtype=object)
-        null_ma.append(compute_ma(null_foci, exp_dfs[xi].Kernels))
-
-    if target_n:
-        p_diff = Parallel(n_jobs=4, verbose=1)(delayed(compute_ale_diff)(
-            s, null_ma, prior, target_n) for i in range(diff_repeats))
-        p_diff = np.mean(p_diff, axis=0)
-    else:
-        p_diff = compute_ale_diff(s, null_ma, prior)
-
-    min_diff, max_diff = np.min(p_diff), np.max(p_diff)
-    return min_diff, max_diff
-
-
 """ Legacy Contrast Computations"""
 
 
-def compute_perm_diff(s, masked_ma):
-    # make list with range of values with amount of studies in both experiments together
-    sr = np.arange(len(s[0])+len(s[1]))
-    sr = np.random.permutation(sr)
-    # calculate ale difference for this permutation
-    perm_diff = (1-np.prod(masked_ma[sr[:len(s[0])]], axis=0)) - \
-        (1-np.prod(masked_ma[sr[len(s[0]):]], axis=0))
-    return perm_diff
+def compute_null_diff(ma_merge, nexp):
+
+    permutation = np.random.permutation(np.arange(ma_merge.shape[0]))
+    ale_perm1 = compute_ale(ma_merge[permutation[:nexp]])
+    ale_perm2 = compute_ale(ma_merge[permutation[nexp:]])
+    null_diff = ale_perm1 - ale_perm2
+
+    return null_diff
 
 
-def compute_sig_diff(fx, mask, ale_diff, perm_diff, monte_carlo_iterations, diff_thresh):
-    n_bigger = [np.sum([diff[i] > ale_diff[i] for diff in perm_diff])
-                for i in range(mask.sum())]
-    prob_bigger = np.array([x / monte_carlo_iterations for x in n_bigger])
+def compute_sig_diff(ale_difference, null_difference, significance_threshold=0.05):
+    p_diff = np.average((null_difference > ale_difference), axis=0)
+    EPS = np.finfo(float).eps
+    p_diff[p_diff < EPS] = EPS
+    z_diff = norm.ppf(1 - p_diff)
+    # = significance check at p< 0.05
+    z_threshold = norm.ppf(1-significance_threshold)
+    sig_diff_idxs = np.argwhere(z_diff > z_threshold)
 
-    z_null = norm.ppf(1-prob_bigger)  # z-value
-    z_null[np.logical_and(np.isinf(z_null), z_null > 0)] = norm.ppf(1-EPS)
-    # for values where the actual difference is consistently higher
-    # than the null distribution the minimum will be z and ->
-    z = np.minimum(fx[mask], z_null)
-    # will most likely be above the threshold of p = 0.05 or z ~ 1.65
-    sig_idxs = np.argwhere(z > norm.ppf(1-diff_thresh)).T
-    z = z[sig_idxs]
-    sig_idxs = np.argwhere(mask is True)[sig_idxs].squeeze().T
-    return z, sig_idxs
+    return z_diff[sig_diff_idxs], sig_diff_idxs
 
 
 """ Plot Utils """

@@ -123,9 +123,10 @@ def transform_coordinates_to_voxel_space(exp_info):
     exp_info['Coordinates'] = [np.ceil(np.dot(np.linalg.inv(MNI_AFFINE), xyzmm.T))[
         :3].T.astype(int) for xyzmm in padded_xyz]
 
-    thresholds = [91, 109, 91]
+    thresholds = [90, 108, 90]
     exp_info['Coordinates'] = exp_info.apply(
-        lambda row: np.minimum(row['Coordinates'], thresholds), axis=1)
+        lambda row: np.minimum(row['Coordinates'], thresholds), axis=1
+    )
     return exp_info
 
 

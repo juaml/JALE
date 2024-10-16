@@ -19,11 +19,10 @@ def compute_3dkernel(fwhm, dims):
     s = (fwhm/2/math.sqrt(8*math.log(2)) +
          np.finfo(float).eps)**2  # fwhm -> sigma
 
-    # 1D Gaussian based on sigma
-
     # Half of required kernel length
     half_k_length = math.ceil(3.5*math.sqrt(s))
     x = list(range(-half_k_length, half_k_length + 1))
+    # 1D Gaussian based on sigma
     oned_kernel = np.exp(-0.5 * np.multiply(x, x) / s) / math.sqrt(2*math.pi*s)
     oned_kernel = np.divide(oned_kernel, np.sum(oned_kernel))
 
