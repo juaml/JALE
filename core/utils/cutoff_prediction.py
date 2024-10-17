@@ -67,13 +67,13 @@ def feature_extraction(nexp, nsub, nfoci):
 def predict_cutoff(exp_df):
     module_path = Path(__file__).resolve().parents[2]
     xgb_vfwe = xgb.XGBRegressor()
-    xgb_vfwe.load_model(module_path / "ml_models/vFWE_model.txt")
+    xgb_vfwe.load_model(module_path / "assets/ml_models/vFWE_model.txt")
 
     xgb_cfwe = xgb.XGBRegressor()
-    xgb_cfwe.load_model(module_path / "ml_models/cFWE_model.txt")
+    xgb_cfwe.load_model(module_path / "assets/ml_models/cFWE_model.txt")
 
     xgb_tfce = xgb.XGBRegressor()
-    xgb_tfce.load_model(module_path / "ml_models/tfce_model.txt")
+    xgb_tfce.load_model(module_path / "assets/ml_models/tfce_model.txt")
 
     nexp = exp_df.shape[0]
     if nexp > 150:
@@ -81,7 +81,7 @@ def predict_cutoff(exp_df):
               "Out-Of-Distribution prediction: Accuracy can not be guaranteed."
               "Please disable cutoff prediction!")
     nsub = exp_df.Subjects
-    nfoci = exp_df.Peaks
+    nfoci = exp_df.NumberOfFoci
     features = feature_extraction(nexp, nsub, nfoci)
 
     vfwe_cutoff = xgb_vfwe.predict(features)

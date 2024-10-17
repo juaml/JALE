@@ -30,6 +30,7 @@ def main_effect(project_path,
 
     # calculate smoothing kernels for each experiment
     kernels = create_kernel_array(exp_df)
+    np.save(project_path / f'{meta_name}_kernels', kernels)
 
     # calculate maximum possible ale value to set boundaries for histogram bins
     max_ma = np.prod([1 - np.max(kernel) for kernel in kernels])
@@ -62,23 +63,15 @@ def main_effect(project_path,
                 cfwe_null = pickle.load(f)
         else:
             print(f"{meta_name} - computing cv cluster cut-off.")
-            _, cfwe_null, _ = zip(
-                *Parallel(
-                    n_jobs=nprocesses,
-                    verbose=2
-                )(
-                    delayed(compute_monte_carlo_null)(
-                        num_foci=exp_df.NumberOfFoci,
-                        kernels=kernels,
-                        bin_edges=bin_edges,
-                        bin_centers=bin_centers,
-                        step=step,
-                        cluster_forming_threshold=cluster_forming_threshold,
-                        target_n=target_n,
-                        tfce_enabled=False
-                    ) for i in range(monte_carlo_iterations)
-                )
-            )
+            _, cfwe_null, _ = zip(*Parallel(n_jobs=nprocesses)(
+                delayed(compute_monte_carlo_null)(num_foci=exp_df.NumberOfFoci,
+                                                  kernels=kernels,
+                                                  bin_edges=bin_edges,
+                                                  bin_centers=bin_centers,
+                                                  step=step,
+                                                  cluster_forming_threshold=cluster_forming_threshold,
+                                                  target_n=target_n,
+                                                  tfce_enabled=False) for i in range(monte_carlo_iterations)))
 
             subsampling_cfwe_threshold = np.percentile(cfwe_null, 95)
             with open(project_path /
@@ -89,8 +82,7 @@ def main_effect(project_path,
 
         samples = generate_unique_subsamples(total_n=exp_df.shape[0],
                                              target_n=target_n,
-                                             sample_n=sample_n
-                                             )
+                                             sample_n=sample_n)
         ale_mean = compute_sub_ale(samples,
                                    ma,
                                    subsampling_cfwe_threshold,
@@ -181,22 +173,16 @@ def main_effect(project_path,
                     vfwe_null, cfwe_null, tfce_null = pickle.load(f)
             else:
                 print(f"{meta_name} - simulating null")
-                vfwe_null, cfwe_null, tfce_null = zip(
-                    *Parallel(
-                        n_jobs=nprocesses,
-                        verbose=2
-                    )(
-                        delayed(compute_monte_carlo_null)(
-                            num_foci=exp_df.NumberOfFoci,
-                            kernels=kernels,
-                            bin_edges=bin_edges,
-                            bin_centers=bin_centers,
-                            step=step,
-                            cluster_forming_threshold=cluster_forming_threshold,
-                            tfce_enabled=tfce_enabled
-                        ) for i in range(monte_carlo_iterations)
-                    )
-                )
+                vfwe_null, cfwe_null, tfce_null = zip(*Parallel(n_jobs=nprocesses)(
+                    delayed(compute_monte_carlo_null)(
+                        num_foci=exp_df.NumberOfFoci,
+                        kernels=kernels,
+                        bin_edges=bin_edges,
+                        bin_centers=bin_centers,
+                        step=step,
+                        cluster_forming_threshold=cluster_forming_threshold,
+                        tfce_enabled=tfce_enabled) for i in range(monte_carlo_iterations)))
+
                 simulation_pickle = (vfwe_null, cfwe_null, tfce_null)
                 with open(project_path /
                           f"Full/NullDistributions/{meta_name}_montecarlo.pickle", "wb") as f:
@@ -215,9 +201,8 @@ def main_effect(project_path,
             plot_and_save(vfwe_map,
                           nii_path=project_path /
                           f"Full/Volumes/{meta_name}_vFWE05.nii")
-            print(
-                f"Min p-value for FWE: {sum(vfwe_null > np.max(ale)) / len(vfwe_null)}"
-            )
+            if np.max(ale) > vfwe_treshold:
+                print("vFWE: significant effect found.")
 
             # cluster wise family wise error correction
             cfwe_map, max_clust = compute_clusters(z,
@@ -226,8 +211,8 @@ def main_effect(project_path,
             plot_and_save(cfwe_map,
                           nii_path=project_path /
                           f"Full/Volumes/{meta_name}_cFWE05.nii")
-            print(
-                f"Min p-value for cFWE:{sum(cfwe_null>max_clust)/len(cfwe_null)}")
+            if max_clust > cfwe_threshold:
+                print("cFWE: significant effect found.")
 
             # tfce error correction
             if tfce_enabled:
@@ -235,8 +220,8 @@ def main_effect(project_path,
                 plot_and_save(tfce_map,
                               nii_path=project_path /
                               f"Full/Volumes/{meta_name}_TFCE05.nii")
-                print(
-                    f"Min p-value for TFCE:{sum(tfce_null>np.max(tfce))/len(tfce_null)}")
+                if np.max(tfce) > tfce_threshold:
+                    print("TFCE: significant effect found.")
 
         else:
             pass

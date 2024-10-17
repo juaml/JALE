@@ -8,7 +8,6 @@ from core.utils.tfce_par import tfce_par
 from core.utils.kernel import kernel_convolution
 from core.utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR, GM_SAMPLE_SPACE, MNI_AFFINE
 
-
 EPS = np.finfo(float).eps
 
 """ Main Effect Computations """
@@ -127,10 +126,11 @@ def compute_clusters(z, cluster_forming_threshold, cfwe_threshold=None):
 
 
 def compute_null_ale(num_foci, kernels):
-    null_foci = np.array([GM_SAMPLE_SPACE[:, np.random.randint(0,
-                                                               GM_SAMPLE_SPACE.shape[1],
-                                                               num_focus)].T for num_focus in num_foci],
-                         dtype=object)
+    null_foci = [
+        GM_SAMPLE_SPACE[:, np.random.randint(
+            0, GM_SAMPLE_SPACE.shape[1], num_focus)].T
+        for num_focus in num_foci
+    ]
     null_ma = compute_ma(null_foci, kernels)
     null_ale = compute_ale(null_ma)
 
@@ -235,14 +235,14 @@ def compute_sub_ale(samples,
 """ Legacy Contrast Computations"""
 
 
-def compute_null_diff(ma_merge, nexp):
+def compute_permuted_ale_diff(ma_merge, nexp):
 
     permutation = np.random.permutation(np.arange(ma_merge.shape[0]))
     ale_perm1 = compute_ale(ma_merge[permutation[:nexp]])
     ale_perm2 = compute_ale(ma_merge[permutation[nexp:]])
-    null_diff = ale_perm1 - ale_perm2
+    permuted_diff = ale_perm1 - ale_perm2
 
-    return null_diff
+    return permuted_diff
 
 
 def compute_sig_diff(ale_difference, null_difference, significance_threshold=0.05):
@@ -250,11 +250,65 @@ def compute_sig_diff(ale_difference, null_difference, significance_threshold=0.0
     EPS = np.finfo(float).eps
     p_diff[p_diff < EPS] = EPS
     z_diff = norm.ppf(1 - p_diff)
-    # = significance check at p< 0.05
     z_threshold = norm.ppf(1-significance_threshold)
-    sig_diff_idxs = np.argwhere(z_diff > z_threshold)
 
-    return z_diff[sig_diff_idxs], sig_diff_idxs
+    if np.max(z_diff) < z_threshold:
+        z_diff = 0
+        sig_diff_idxs = 0
+    else:
+        sig_diff_idxs = np.argwhere(z_diff > z_threshold)
+        z_diff = z_diff[sig_diff_idxs]
+
+    return z_diff, sig_diff_idxs
+
+
+""" Balanced Contrast Computations"""
+
+
+def compute_balanced_ale_diff(ma1, ma2, prior, target_n):
+
+    # subALE1
+    subsample1 = np.random.choice(
+        np.arange(ma1.shape[0]), target_n, replace=False)
+    ale1 = compute_ale(ma1[subsample1, :][:, prior])
+
+    # subALE2
+    subsample2 = np.random.choice(
+        np.arange(ma2.shape[0]), target_n, replace=False)
+    ale2 = compute_ale(ma2[subsample2, :][:, prior])
+
+    r_diff = ale1 - ale2
+
+    return r_diff
+
+
+def compute_balanced_null_diff(nfoci1, kernels1, nfoci2, kernels2, prior, sampling_reps, target_n):
+
+    null_foci1 = [
+        GM_SAMPLE_SPACE[:, np.random.randint(
+            0, GM_SAMPLE_SPACE.shape[1], nfoci)].T
+        for nfoci in nfoci1
+    ]
+    null_ma1 = compute_ma(null_foci1, kernels1)
+
+    null_foci2 = [
+        GM_SAMPLE_SPACE[:, np.random.randint(
+            0, GM_SAMPLE_SPACE.shape[1], nfoci)].T
+        for nfoci in nfoci2
+    ]
+    null_ma2 = compute_ma(null_foci2, kernels2)
+
+    null_diff = np.zeros((np.sum(prior),))
+    for _ in range(sampling_reps):
+        null_diff += compute_balanced_ale_diff(null_ma1,
+                                               null_ma2,
+                                               prior,
+                                               target_n)
+    null_diff = null_diff / sampling_reps
+
+    min_diff, max_diff = np.min(null_diff), np.max(null_diff)
+
+    return min_diff, max_diff
 
 
 """ Plot Utils """
