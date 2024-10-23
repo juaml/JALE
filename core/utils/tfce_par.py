@@ -1,7 +1,8 @@
+import operator
+from functools import reduce
+
 import numpy as np
 from scipy import ndimage
-from functools import reduce
-import operator
 
 
 def tfce_par(invol, h, dh, voxel_dims=[2, 2, 2], E=0.6, H=2):
@@ -9,7 +10,7 @@ def tfce_par(invol, h, dh, voxel_dims=[2, 2, 2], E=0.6, H=2):
     thresh = invol > h
 
     # Identify suprathreshold clusters and count their sizes
-    labels, cluster_count = ndimage.label(thresh)
+    labels, cluster_count = ndimage.label(thresh)  # type: ignore
 
     # Get unique labels and their sizes, excluding background (label 0)
     sizes = np.bincount(labels.ravel()) * reduce(operator.mul, voxel_dims)
@@ -18,6 +19,6 @@ def tfce_par(invol, h, dh, voxel_dims=[2, 2, 2], E=0.6, H=2):
     mask = labels > 0
 
     # Get cluster sizes for labeled areas and compute TFCE update values
-    update_vals = (h ** H) * dh * (sizes[labels[mask]] ** E)
+    update_vals = (h**H) * dh * (sizes[labels[mask]] ** E)
 
     return update_vals, mask

@@ -6,7 +6,6 @@ def tal2icbm_spm(inpoints):
     space (normalized using the SPM software package) using the 
     tal2icbm transform developed and validated by Jack Lancaster 
     at the Research Imaging Center in San Antonio, Texas.'''
-
     icbm_spm = np.array(([0.9254, 0.0024, -0.0118, -1.0207],
                         [-0.0048, 0.9316, -0.0871, -1.7667],
                         [0.0152, 0.0883,  0.8924,  4.0926],

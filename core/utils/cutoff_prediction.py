@@ -1,8 +1,9 @@
-import numpy as np
-from scipy.stats import kurtosis, skew
-import xgboost as xgb
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import numpy as np
+import xgboost as xgb
+from scipy.stats import kurtosis, skew
 
 
 def feature_extraction(nexp, nsub, nfoci):
@@ -12,9 +13,11 @@ def feature_extraction(nexp, nsub, nfoci):
     nsub_std = np.std(nsub)
     nsub_max = np.max(nsub)
     if nsub_max > 300:
-        print("Dataset features parameters that would lead to"
-              "Out-Of-Distribution prediction: Accuracy can not be guaranteed."
-              "Please disable cutoff prediction!")
+        print(
+            "Dataset features parameters that would lead to"
+            "Out-Of-Distribution prediction: Accuracy can not be guaranteed."
+            "Please disable cutoff prediction!"
+        )
         sys.exit()
     nsub_min = np.min(nsub)
     nsub_skew = skew(nsub)
@@ -26,9 +29,11 @@ def feature_extraction(nexp, nsub, nfoci):
     nfoci_std = np.std(nfoci)
     nfoci_max = np.max(nfoci)
     if nfoci_max > 150:
-        print("Dataset features parameters that would lead to"
-              "Out-Of-Distribution prediction: Accuracy can not be guaranteed."
-              "Please disable cutoff prediction!")
+        print(
+            "Dataset features parameters that would lead to"
+            "Out-Of-Distribution prediction: Accuracy can not be guaranteed."
+            "Please disable cutoff prediction!"
+        )
     nfoci_min = np.min(nfoci)
     nfoci_skew = skew(nfoci)
     nfoci_kurtosis = kurtosis(nfoci)
@@ -55,11 +60,34 @@ def feature_extraction(nexp, nsub, nfoci):
         if nsub[i] < 10:
             vi_foci += nfoci[i]
 
-    x = np.c_[nexp,
-              nsub_total, nsub_mean, nsub_median, nsub_std, nsub_max, nsub_min, nsub_skew, nsub_kurtosis,
-              nfoci_total, nfoci_mean, nfoci_median, nfoci_std, nfoci_max, nfoci_min, nfoci_skew, nfoci_kurtosis,
-              ratio_mean, ratio_std, ratio_max, ratio_min, nstudies_foci_ratio,
-              hi_foci, mi_foci, li_foci, vi_foci]
+    x = np.c_[
+        nexp,
+        nsub_total,
+        nsub_mean,
+        nsub_median,
+        nsub_std,
+        nsub_max,
+        nsub_min,
+        nsub_skew,
+        nsub_kurtosis,
+        nfoci_total,
+        nfoci_mean,
+        nfoci_median,
+        nfoci_std,
+        nfoci_max,
+        nfoci_min,
+        nfoci_skew,
+        nfoci_kurtosis,
+        ratio_mean,
+        ratio_std,
+        ratio_max,
+        ratio_min,
+        nstudies_foci_ratio,
+        hi_foci,
+        mi_foci,
+        li_foci,
+        vi_foci,
+    ]
 
     return x
 
@@ -77,9 +105,11 @@ def predict_cutoff(exp_df):
 
     nexp = exp_df.shape[0]
     if nexp > 150:
-        print("Dataset features parameters that would lead to"
-              "Out-Of-Distribution prediction: Accuracy can not be guaranteed."
-              "Please disable cutoff prediction!")
+        print(
+            "Dataset features parameters that would lead to"
+            "Out-Of-Distribution prediction: Accuracy can not be guaranteed."
+            "Please disable cutoff prediction!"
+        )
     nsub = exp_df.Subjects
     nfoci = exp_df.NumberOfFoci
     features = feature_extraction(nexp, nsub, nfoci)
