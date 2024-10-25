@@ -1,3 +1,4 @@
+import logging
 import pickle
 from pathlib import Path
 
@@ -22,6 +23,8 @@ from core.utils.compute import (
 from core.utils.cutoff_prediction import predict_cutoff
 from core.utils.kernel import create_kernel_array
 from core.utils.plot_and_save import plot_and_save
+
+logger = logging.getLogger("pyALE_logger")
 
 
 def main_effect(
@@ -110,13 +113,13 @@ def main_effect(
 
     if target_n:
         # subsampling or probabilistic ALE
-        print(f"{meta_name} - entering probabilistic ALE routine.")
+        logger.info(f"{meta_name} - entering probabilistic ALE routine.")
         # Check whether monte-carlo cutoff has been calculated before
         if Path(
             project_path
             / f"CV/NullDistributions/{meta_name}_montecarlo_{target_n}.pickle"
         ).exists():
-            print(f"{meta_name} - loading cv cluster cut-off.")
+            logger.info(f"{meta_name} - loading cv cluster cut-off.")
             with open(
                 project_path
                 / f"CV/NullDistributions/{meta_name}_montecarlo_{target_n}.pickle",
@@ -125,7 +128,7 @@ def main_effect(
                 cfwe_null = pickle.load(f)
                 subsampling_cfwe_threshold = np.percentile(cfwe_null, 95)
         else:
-            print(f"{meta_name} - computing cv cluster cut-off.")
+            logger.info(f"{meta_name} - computing cv cluster cut-off.")
             _, cfwe_null, _ = zip(
                 *Parallel(n_jobs=nprocesses)(
                     delayed(compute_monte_carlo_null)(
@@ -153,14 +156,14 @@ def main_effect(
             project_path
             / f"CV/NullDistributions/{meta_name}_montecarlo_{target_n}.pickle"
         ).exists():
-            print(f"{meta_name} - loading cv ale")
+            logger.info(f"{meta_name} - loading cv ale")
 
             ale_mean = np.load(
                 project_path / f"CV/Volumes/{meta_name}_sub_ale_{target_n}.nii"
             )
 
         else:
-            print(f"{meta_name} - computing cv ale.")
+            logger.info(f"{meta_name} - computing cv ale.")
 
             samples = generate_unique_subsamples(
                 total_n=exp_df.shape[0], target_n=target_n, sample_n=sample_n
@@ -180,13 +183,13 @@ def main_effect(
                 / f"CV/Volumes/{meta_name}_sub_ale_{target_n}.nii",
             )
 
-            print(f"{meta_name} - probabilistic ALE done!")
+            logger.info(f"{meta_name} - probabilistic ALE done!")
 
     else:
         # Full ALE
         # Foci illustration
         if not Path(project_path / f"/Full/Volumes/Foci/{meta_name}.nii").exists():
-            print(f"{meta_name} - illustrate Foci")
+            logger.info(f"{meta_name} - illustrate Foci")
             # take all peaks of included studies and save them in a Nifti
             foci_arr = illustrate_foci(exp_df.Coordinates.values)
             plot_and_save(
@@ -195,8 +198,8 @@ def main_effect(
 
         # ALE calculation
         if Path(project_path / f"Full/NullDistributions/{meta_name}.pickle").exists():
-            print(f"{meta_name} - loading ALE")
-            print(f"{meta_name} - loading null PDF")
+            logger.info(f"{meta_name} - loading ALE")
+            logger.info(f"{meta_name} - loading null PDF")
             ale = nb.loadsave.load(
                 project_path / f"/Full/Volumes/{meta_name}_ale.nii"
             ).get_fdata()  # type: ignore
@@ -206,7 +209,7 @@ def main_effect(
                 hx_conv, _ = pickle.load(f)
 
         else:
-            print(f"{meta_name} - computing ALE and null PDF")
+            logger.info(f"{meta_name} - computing ALE and null PDF")
             ale = compute_ale(ma)
             plot_and_save(
                 ale, nii_path=project_path / f"Full/Volumes/{meta_name}_ale.nii"
@@ -225,13 +228,13 @@ def main_effect(
 
         # z- and tfce-map calculation
         if Path(project_path / f"Full/Volumes/{meta_name}_z.nii").exists():
-            print(f"{meta_name} - loading z-values & TFCE")
+            logger.info(f"{meta_name} - loading z-values & TFCE")
             z = nb.loadsave.load(
                 project_path / f"Full/Volumes/{meta_name}_z.nii"
             ).get_fdata()  # type: ignore
 
         else:
-            print(f"{meta_name} - computing p-values & TFCE")
+            logger.info(f"{meta_name} - computing p-values & TFCE")
             z = compute_z(ale, hx_conv, step)
             plot_and_save(z, nii_path=project_path / f"Full/Volumes/{meta_name}_z.nii")
         if tfce_enabled is True:
@@ -259,7 +262,7 @@ def main_effect(
             if Path(
                 project_path / f"Full/NullDistributions/{meta_name}_montecarlo.pickle"
             ).exists():
-                print(f"{meta_name} - loading null")
+                logger.info(f"{meta_name} - loading null")
                 with open(
                     project_path
                     / f"Full/NullDistributions/{meta_name}_montecarlo.pickle",
@@ -267,7 +270,7 @@ def main_effect(
                 ) as f:
                     vfwe_null, cfwe_null, tfce_null = pickle.load(f)
             else:
-                print(f"{meta_name} - simulating null")
+                logger.info(f"{meta_name} - simulating null")
                 vfwe_null, cfwe_null, tfce_null = zip(
                     *Parallel(n_jobs=nprocesses)(
                         delayed(compute_monte_carlo_null)(
@@ -297,14 +300,14 @@ def main_effect(
 
         # Tresholding maps with vFWE, cFWE, TFCE thresholds
         if not Path(project_path / f"Full/Volumes/{meta_name}_vfwe.nii").exists():
-            print(f"{meta_name} - inference and printing")
+            logger.info(f"{meta_name} - inference and printing")
             # voxel wise family wise error correction
             vfwe_map = ale * (ale > vfwe_treshold)
             plot_and_save(
                 vfwe_map, nii_path=project_path / f"Full/Volumes/{meta_name}_vFWE05.nii"
             )
             if np.max(ale) > vfwe_treshold:
-                print("vFWE: significant effect found.")
+                logger.info("vFWE: significant effect found.")
 
             # cluster wise family wise error correction
             cfwe_map, max_clust = compute_clusters(
@@ -314,7 +317,7 @@ def main_effect(
                 cfwe_map, nii_path=project_path / f"Full/Volumes/{meta_name}_cFWE05.nii"
             )
             if max_clust > cfwe_threshold:
-                print("cFWE: significant effect found.")
+                logger.info("cFWE: significant effect found.")
 
             # tfce error correction
             if tfce_enabled:
@@ -324,8 +327,8 @@ def main_effect(
                     nii_path=project_path / f"Full/Volumes/{meta_name}_TFCE05.nii",
                 )
                 if np.max(tfce) > tfce_threshold:
-                    print("TFCE: significant effect found.")
+                    logger.info("TFCE: significant effect found.")
 
         else:
             pass
-            print(f"{meta_name} - done!")
+            logger.info(f"{meta_name} - done!")

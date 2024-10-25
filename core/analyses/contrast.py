@@ -1,3 +1,4 @@
+import logging
 import pickle
 from pathlib import Path
 
@@ -15,6 +16,8 @@ from core.utils.compute import (
 )
 from core.utils.plot_and_save import plot_and_save
 from core.utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR
+
+logger = logging.getLogger("pyALE_logger")
 
 
 def contrast(
@@ -68,12 +71,12 @@ def contrast(
     if Path(
         project_path / f"Contrast/Full/{meta_names[0]}_vs_{meta_names[1]}.nii"
     ).exists():
-        print(f"{meta_names[0]} x {meta_names[1]} - Loading contrast.")
+        logger.info(f"{meta_names[0]} x {meta_names[1]} - Loading contrast.")
         contrast_arr = nb.loadsave.load(
             project_path / f"Contrast/Full/{meta_names[0]}_vs_{meta_names[1]}.nii"
         ).get_fdata()  # type: ignore
     else:
-        print(f"{meta_names[0]} x {meta_names[1]} - Computing positive contrast.")  # noqa
+        logger.info(f"{meta_names[0]} x {meta_names[1]} - Computing positive contrast.")  # noqa
         main_effect1 = nb.loadsave.load(
             project_path / f"MainEffect/Full/Volumes/{meta_names[0]}_cFWE05.nii"
         ).get_fdata()  # type: ignore
@@ -97,10 +100,10 @@ def contrast(
             )
 
         else:
-            print(f"{meta_names[0]}: No significant indices!")
+            logger.warning(f"{meta_names[0]}: No significant indices!")
             z1, sig_idxs1 = [], []
 
-        print(f"{meta_names[1]} x {meta_names[0]} - Computing negative contrast.")
+        logger.info(f"{meta_names[1]} x {meta_names[0]} - Computing negative contrast.")
         main_effect2 = nb.loadsave.load(
             project_path / f"MainEffect/Full/Volumes/{meta_names[1]}_cFWE05.nii"
         ).get_fdata()  # type: ignore
@@ -121,10 +124,10 @@ def contrast(
             )
 
         else:
-            print(f"{meta_names[1]}: No significant indices!")
+            logger.warning(f"{meta_names[1]}: No significant indices!")
             z2, sig_idxs2 = np.array([]), []
 
-        print(f"{meta_names[0]} vs {meta_names[1]} - Inference and printing.")
+        logger.info(f"{meta_names[0]} vs {meta_names[1]} - Inference and printing.")
         contrast_arr = np.zeros(BRAIN_ARRAY_SHAPE)
         contrast_arr[significance_mask1][sig_idxs1] = z1
         contrast_arr[significance_mask2][sig_idxs2] = -z2
@@ -138,12 +141,12 @@ def contrast(
     if Path(
         project_path / f"Contrast/Full/{meta_names[0]}_AND_{meta_names[1]}_cFWE.nii"
     ).exists():
-        print(f"{meta_names[0]} & {meta_names[1]} - Loading conjunction.")
+        logger.info(f"{meta_names[0]} & {meta_names[1]} - Loading conjunction.")
         conj_arr = nb.loadsave.load(
             project_path / f"Contrast/Full/{meta_names[0]}_AND_{meta_names[1]}_cFWE.nii"
         ).get_fdata()  # type: ignore
     else:
-        print(f"{meta_names[0]} & {meta_names[1]} - Computing conjunction.")
+        logger.info(f"{meta_names[0]} & {meta_names[1]} - Computing conjunction.")
         conj_arr = np.minimum(main_effect1, main_effect2)
         if conj_arr is not None:
             plot_and_save(
@@ -152,7 +155,7 @@ def contrast(
                 / f"Contrast/Full/{meta_names[0]}_AND_{meta_names[1]}_cFWE.nii",
             )
 
-    print(f"{meta_names[0]} & {meta_names[1]} - done!")
+    logger.info(f"{meta_names[0]} & {meta_names[1]} - done!")
 
 
 def balanced_contrast(
@@ -219,7 +222,7 @@ def balanced_contrast(
         project_path
         / f"Contrast/Conjunctions/{meta_names[0]}_AND_{meta_names[1]}_{target_n}.nii"
     ).exists():
-        print(f"{meta_names[0]} x {meta_names[1]} - computing conjunction")
+        logger.info(f"{meta_names[0]} x {meta_names[1]} - computing conjunction")
         conjunction = np.minimum(main_effect1, main_effect2)
         conjunction = plot_and_save(
             conjunction,
@@ -231,7 +234,7 @@ def balanced_contrast(
         project_path
         / f"Contrast/Balanced/NullDistributions/{meta_names[0]}_x_{meta_names[1]}_{target_n}.pickle"
     ).exists():
-        print(
+        logger.info(
             f"{meta_names[0]} x {meta_names[1]} - loading actual diff and null extremes"
         )
         with open(
@@ -241,7 +244,7 @@ def balanced_contrast(
         ) as f:
             r_diff, prior, min_diff, max_diff = pickle.load(f)
     else:
-        print(
+        logger.info(
             f"{meta_names[0]} x {meta_names[1]} - computing actual diff and null extremes"
         )
         prior = np.zeros(BRAIN_ARRAY_SHAPE).astype(bool)
@@ -281,7 +284,9 @@ def balanced_contrast(
     if not Path(
         f"Contrast/Balanced/{meta_names[0]}_x_{meta_names[1]}_{target_n}_vFWE05.nii"
     ).exists():
-        print(f"{meta_names[0]} x {meta_names[1]} - computing significant contrast")  # noqa
+        logger.info(
+            f"{meta_names[0]} x {meta_names[1]} - computing significant contrast"
+        )
 
         # Calculate thresholds
         low_threshold = np.percentile(min_diff, 2.5)
@@ -315,4 +320,6 @@ def balanced_contrast(
             / f"Contrast/Balanced/{meta_names[0]}_x_{meta_names[1]}_{target_n}_FWE05.nii",
         )
 
-    print(f"{meta_names[0]} x {meta_names[1]} balanced (n = {target_n}) contrast done!")
+    logger.info(
+        f"{meta_names[0]} x {meta_names[1]} balanced (n = {target_n}) contrast done!"
+    )

@@ -41,3 +41,5 @@ def folder_setup(path):
             (basepath / folder).mkdir(
                 parents=True, exist_ok=True
             )  # Create folder, including any necessary parents
+
+    (path / "logs").mkdir(parents=True, exist_ok=True)
