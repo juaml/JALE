@@ -109,7 +109,7 @@ def main_effect(
     )
 
     ma = compute_ma(exp_df.Coordinates.values, kernels)
-    np.save(project_path / f"{meta_name}_ma", ma)
+    np.savez_compressed(project_path / f"{meta_name}_ma", ma)
 
     if target_n:
         # subsampling or probabilistic ALE

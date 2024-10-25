@@ -59,11 +59,11 @@ def contrast(
     # set results folder as path
     project_path = (Path(project_path) / "Results").resolve()
 
-    ma1 = np.load(project_path / f"MainEffect/{meta_names[0]}_ma.npy")
+    ma1 = np.load(project_path / f"MainEffect/{meta_names[0]}_ma.npz")["arr"]
     ale1 = compute_ale(ma1)
     n_meta_group1 = ma1.shape[0]
 
-    ma2 = np.load(project_path / f"MainEffect/{meta_names[1]}_ma.npy")
+    ma2 = np.load(project_path / f"MainEffect/{meta_names[1]}_ma.npz")["arr"]
     ale2 = compute_ale(ma1)
     n_meta_group2 = ma2.shape[0]
 
@@ -207,9 +207,9 @@ def balanced_contrast(
 
     kernels2 = np.load(project_path / f"MainEffect/{meta_names[1]}_kernels.npy")
 
-    ma1 = np.load(project_path / f"MainEffect/{meta_names[0]}_ma.npy")
+    ma1 = np.load(project_path / f"MainEffect/{meta_names[0]}_ma.npz")["arr"]
 
-    ma2 = np.load(project_path / f"MainEffect/{meta_names[1]}_ma.npy")
+    ma2 = np.load(project_path / f"MainEffect/{meta_names[1]}_ma.npz")["arr"]
 
     main_effect1 = nb.loadsave.load(
         project_path / f"MainEffect/CV/Volumes/{meta_names[0]}_sub_ale_{target_n}.nii"
