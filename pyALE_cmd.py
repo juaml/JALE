@@ -11,31 +11,35 @@ from core.utils.contribution import contribution
 from core.utils.folder_setup import folder_setup
 from core.utils.input import load_excel, read_experiment_info
 
+# path to yaml file as command line argument
 yaml_path = sys.argv[1]
-
-# Load settings from the YAML file
 with open(yaml_path, "r") as file:
     config = yaml.safe_load(file)
 
-# Accessing specific settings
 project_path = config["project"]["path"]
 project_path = Path(project_path).resolve()
+# creates results folder structure at project path
 folder_setup(project_path)
 
 analysis_info_filename = config["project"]["analysis_info"]
 experiment_info_filename = config["project"]["experiment_info"]
 
+# all ale parameters
 params = config["parameters"]
 
+# create dataframe containing 1. experiment info (coordinates, etc.)
 exp_all_df, tasks = read_experiment_info(project_path / experiment_info_filename)
+# dataframe containing analysis information
 analysis_df = load_excel(project_path / analysis_info_filename, type="analysis")
 
+# loop through analysis dataframe, running each individual analysis
 for row_idx in range(analysis_df.shape[0]):
+    # if the first column is empty - skip the row because it belongs to contrast
     if type(analysis_df.iloc[row_idx, 0]) is not str:
         continue
-    if analysis_df.iloc[row_idx, 0] == "M":  # Main Effect Analysis
+    # Main Effect Analysis
+    if analysis_df.iloc[row_idx, 0] == "M":
         print("Running Main-Effect Analysis")
-
         meta_name = analysis_df.iloc[row_idx, 1]
         conditions = analysis_df.iloc[row_idx, 2:].dropna().to_list()
         exp_idxs, masks, mask_names = compile_experiments(conditions, tasks)
@@ -51,7 +55,6 @@ for row_idx in range(analysis_df.shape[0]):
             f"{meta_name} : {len(exp_idxs)} experiments;"
             f"average of {exp_df.Subjects.mean():.2f} subjects per experiment"
         )
-
         main_effect(
             project_path,
             exp_df,
@@ -87,7 +90,8 @@ for row_idx in range(analysis_df.shape[0]):
             print(f"{meta_name}: need to specify subsampling N")
             continue
 
-    if analysis_df.iloc[row_idx, 0] == "C":  # Contrast Analysis
+    # Contrast Analysis
+    if analysis_df.iloc[row_idx, 0] == "C":
         meta_names = [analysis_df.iloc[row_idx, 1], analysis_df.iloc[row_idx + 1, 1]]
         conditions = [
             analysis_df.iloc[row_idx, 2:].dropna().to_list(),
@@ -106,6 +110,9 @@ for row_idx in range(analysis_df.shape[0]):
                 "contains less than 17 Experiments."
                 "Please interprete results carefully!"
             )
+
+        # first check if main effect results exist
+        # if not run main effect for both
         for dataset_idx in [0, 1]:
             if not Path(
                 project_path
@@ -148,7 +155,8 @@ for row_idx in range(analysis_df.shape[0]):
             nprocesses=params["nprocesses"],
         )
 
-    if analysis_df.iloc[row_idx, 0][0] == "B":  # Balanced Contrast Analysis:
+    # Balanced Contrast Analysis
+    if analysis_df.iloc[row_idx, 0][0] == "B":  # type: ignore
         meta_names = [analysis_df.iloc[row_idx, 1], analysis_df.iloc[row_idx + 1, 1]]
         conditions = [
             analysis_df.iloc[row_idx, 2:].dropna().to_list(),
@@ -161,16 +169,17 @@ for row_idx in range(analysis_df.shape[0]):
             exp_all_df.loc[exp_idxs2].reset_index(drop=True),
         ]
 
-        if len(analysis_df.iloc[row_idx, 0]) > 1:
-            target_n = int(analysis_df.iloc[row_idx, 0][1:])
+        if len(analysis_df.iloc[row_idx, 0]) > 1:  # type: ignore
+            target_n = int(analysis_df.iloc[row_idx, 0][1:])  # type: ignore
         else:
             n = [len(exp_idxs[0]), len(exp_idxs[1])]
             target_n = int(min(np.floor(np.mean((np.min(n), 17))), np.min(n) - 2))
-
+        # first check if main effect results exist
+        # if not run main effect for both
         for dataset_idx in [0, 1]:
             if not Path(
                 project_path
-                / f"Results/MainEffect/CV/Volumes/{meta_names[dataset_idx]}_{target_n}.nii"
+                / f"Results/MainEffect/CV/Volumes/{meta_names[dataset_idx]}_sub_ale_{target_n}.nii"
             ).exists():
                 main_effect(
                     project_path,

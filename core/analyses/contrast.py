@@ -12,8 +12,8 @@ from core.utils.compute import (
     compute_balanced_null_diff,
     compute_permuted_ale_diff,
     compute_sig_diff,
-    plot_and_save,
 )
+from core.utils.plot_and_save import plot_and_save
 from core.utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR
 
 
@@ -22,8 +22,37 @@ def contrast(
     meta_names,
     significance_threshold=0.05,
     null_repeats=10000,
-    nprocesses=4,
+    nprocesses=2,
 ):
+    """
+    Compute and save statistical contrasts and conjunctions for meta-analyses.
+
+    This function calculates positive and negative contrasts, as well as conjunctions,
+    between two meta-analyses specified by `meta_names`. If these results are already
+    available, they are loaded from the saved files. Otherwise, the function computes
+    the contrasts by estimating a null distribution through permutation testing, identifies
+    significant voxels, and saves the results as NIfTI images.
+
+    Parameters
+    ----------
+    project_path : str or Path
+        Path to the project directory containing the "Results" folder.
+    meta_names : list of str
+        Names of the meta-analyses to compare; expects two names in the list.
+    significance_threshold : float, optional
+        Significance threshold for identifying significant voxels, by default 0.05.
+    null_repeats : int, optional
+        Number of permutations for generating the null distribution, by default 10000.
+    nprocesses : int, optional
+        Number of parallel processes for permutation testing, by default 4.
+
+    Returns
+    -------
+    None
+        The function performs computations and saves the results as NIfTI files in the
+        specified `project_path` directory.
+    """
+
     # set results folder as path
     project_path = (Path(project_path) / "Results").resolve()
 
@@ -135,6 +164,39 @@ def balanced_contrast(
     monte_carlo_iterations=1000,
     nprocesses=2,
 ):
+    """
+    Compute and save balanced statistical contrasts between two meta-analyses.
+
+    This function performs a balanced contrast analysis between two meta-analyses, specified
+    by `meta_names`, with matched sample sizes (`target_n`). The function calculates both
+    conjunctions and significant contrasts. If results are already available, they are loaded;
+    otherwise, the function computes the required contrasts by estimating null distributions
+    through Monte Carlo sampling and permutation testing.
+
+    Parameters
+    ----------
+    project_path : str or Path
+        Path to the project directory containing the "Results" folder.
+    exp_dfs : list of pandas.DataFrame
+        DataFrames for each meta-analysis, containing information on experimental data.
+    meta_names : list of str
+        Names of the meta-analyses to compare; expects two names in the list.
+    target_n : int
+        Target number of samples for balanced analysis.
+    difference_iterations : int, optional
+        Number of iterations for computing the difference distribution, by default 1000.
+    monte_carlo_iterations : int, optional
+        Number of Monte Carlo iterations for estimating null distributions, by default 1000.
+    nprocesses : int, optional
+        Number of parallel processes for computation, by default 2.
+
+    Returns
+    -------
+    None
+        The function performs computations and saves the results as NIfTI files in the
+        specified `project_path` directory.
+    """
+
     # set results folder as path
     project_path = (Path(project_path) / "Results").resolve()
 
@@ -147,10 +209,10 @@ def balanced_contrast(
     ma2 = np.load(project_path / f"MainEffect/{meta_names[1]}_ma.npy")
 
     main_effect1 = nb.loadsave.load(
-        project_path / f"MainEffect/CV/Volumes/{meta_names[0]}_{target_n}.nii"
+        project_path / f"MainEffect/CV/Volumes/{meta_names[0]}_sub_ale_{target_n}.nii"
     ).get_fdata()  # type: ignore
     main_effect2 = nb.loadsave.load(
-        project_path / f"MainEffect/CV/Volumes/{meta_names[1]}_{target_n}.nii"
+        project_path / f"MainEffect/CV/Volumes/{meta_names[1]}_sub_ale_{target_n}.nii"
     ).get_fdata()  # type: ignore
 
     if not Path(
@@ -161,24 +223,27 @@ def balanced_contrast(
         conjunction = np.minimum(main_effect1, main_effect2)
         conjunction = plot_and_save(
             conjunction,
-            nii_path=f"Contrast/Conjunctions/{meta_names[0]}_AND_{meta_names[1]}_{target_n}.nii",
+            nii_path=project_path
+            / f"Contrast/Balanced/Conjunctions/{meta_names[0]}_AND_{meta_names[1]}_{target_n}.nii",
         )
 
     if Path(
-        f"Contrast/NullDistributions/{meta_names[0]}_x_{meta_names[1]}_{target_n}.pickle"
+        project_path
+        / f"Contrast/Balanced/NullDistributions/{meta_names[0]}_x_{meta_names[1]}_{target_n}.pickle"
     ).exists():
         print(
             f"{meta_names[0]} x {meta_names[1]} - loading actual diff and null extremes"
-        )  # noqa
+        )
         with open(
-            f"Contrast/NullDistributions/{meta_names[0]}_x_{meta_names[1]}_{target_n}.pickle",
+            project_path
+            / f"Contrast/Balanced/NullDistributions/{meta_names[0]}_x_{meta_names[1]}_{target_n}.pickle",
             "rb",
         ) as f:
             r_diff, prior, min_diff, max_diff = pickle.load(f)
     else:
         print(
             f"{meta_names[0]} x {meta_names[1]} - computing actual diff and null extremes"
-        )  # noqa
+        )
         prior = np.zeros(BRAIN_ARRAY_SHAPE).astype(bool)
         prior[GM_PRIOR] = 1
 
@@ -207,13 +272,14 @@ def balanced_contrast(
 
         pickle_object = (r_diff, prior, min_diff, max_diff)
         with open(
-            f"Contrast/NullDistributions/{meta_names[0]}_x_{meta_names[1]}_{target_n}.pickle",
+            project_path
+            / f"Contrast/Balanced/NullDistributions/{meta_names[0]}_x_{meta_names[1]}_{target_n}.pickle",
             "wb",
         ) as f:
             pickle.dump(pickle_object, f)
 
     if not Path(
-        f"Contrast/{meta_names[0]}_x_{meta_names[1]}_{target_n}_vFWE05.nii"
+        f"Contrast/Balanced/{meta_names[0]}_x_{meta_names[1]}_{target_n}_vFWE05.nii"
     ).exists():
         print(f"{meta_names[0]} x {meta_names[1]} - computing significant contrast")  # noqa
 
@@ -245,7 +311,8 @@ def balanced_contrast(
 
         plot_and_save(
             brain_sig_diff,
-            nii_path=f"Contrast/{meta_names[0]}_x_{meta_names[1]}_{target_n}_FWE05.nii",
+            nii_path=project_path
+            / f"Contrast/Balanced/{meta_names[0]}_x_{meta_names[1]}_{target_n}_FWE05.nii",
         )
 
     print(f"{meta_names[0]} x {meta_names[1]} balanced (n = {target_n}) contrast done!")

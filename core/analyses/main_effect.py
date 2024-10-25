@@ -18,10 +18,10 @@ from core.utils.compute import (
     compute_z,
     generate_unique_subsamples,
     illustrate_foci,
-    plot_and_save,
 )
 from core.utils.cutoff_prediction import predict_cutoff
 from core.utils.kernel import create_kernel_array
+from core.utils.plot_and_save import plot_and_save
 
 
 def main_effect(
@@ -37,6 +37,48 @@ def main_effect(
     sample_n=2500,
     nprocesses=2,
 ):
+    """
+    Compute and save the main effect map for a given meta-analysis.
+
+    This function calculates the main effect for a meta-analysis specified by `meta_name`,
+    performing various analyses based on user-defined parameters, including full and probabilistic
+    ALE (Activation Likelihood Estimation), permutation testing, and statistical correction
+    through voxel-wise, cluster-wise, and TFCE (Threshold-Free Cluster Enhancement) methods.
+    If `target_n` is provided, probabilistic ALE is computed with subsampling; otherwise,
+    a full ALE is performed.
+
+    Parameters
+    ----------
+    project_path : str or Path
+        Path to the project directory containing the "Results" folder.
+    exp_df : pandas.DataFrame
+        DataFrame containing experiment data, including coordinates and number of foci.
+    meta_name : str
+        Name of the meta-analysis, used for naming saved files.
+    tfce_enabled : bool, optional
+        Whether to compute TFCE-corrected maps, by default True.
+    cutoff_predict_enabled : bool, optional
+        If True, predicts statistical thresholds using ML models, by default True.
+    bin_steps : float, optional
+        Step size for defining histogram bins, by default 0.0001.
+    cluster_forming_threshold : float, optional
+        Threshold for forming clusters in ALE, by default 0.001.
+    monte_carlo_iterations : int, optional
+        Number of Monte Carlo iterations for null distribution simulation, by default 5000.
+    target_n : int, optional
+        Target number of subsamples for probabilistic ALE, by default None (uses full sample).
+    sample_n : int, optional
+        Number of subsamples to generate if `target_n` is specified, by default 2500.
+    nprocesses : int, optional
+        Number of parallel processes for computations, by default 2.
+
+    Returns
+    -------
+    None
+        The function performs computations and saves the results as NIfTI files in the
+        specified `project_path` directory.
+    """
+
     # set main_effect results folder as path
     project_path = (Path(project_path) / "Results/MainEffect").resolve()
 
@@ -77,10 +119,11 @@ def main_effect(
             print(f"{meta_name} - loading cv cluster cut-off.")
             with open(
                 project_path
-                / f"/CV/NullDistributions/{meta_name}_montecarlo_{target_n}.pickle",
+                / f"CV/NullDistributions/{meta_name}_montecarlo_{target_n}.pickle",
                 "rb",
             ) as f:
                 cfwe_null = pickle.load(f)
+                subsampling_cfwe_threshold = np.percentile(cfwe_null, 95)
         else:
             print(f"{meta_name} - computing cv cluster cut-off.")
             _, cfwe_null, _ = zip(
@@ -106,28 +149,38 @@ def main_effect(
                 "wb",
             ) as f:
                 pickle.dump(cfwe_null, f)
+        if Path(
+            project_path
+            / f"CV/NullDistributions/{meta_name}_montecarlo_{target_n}.pickle"
+        ).exists():
+            print(f"{meta_name} - loading cv ale")
 
-        print(f"{meta_name} - computing cv ale.")
+            ale_mean = np.load(
+                project_path / f"CV/Volumes/{meta_name}_sub_ale_{target_n}.nii"
+            )
 
-        samples = generate_unique_subsamples(
-            total_n=exp_df.shape[0], target_n=target_n, sample_n=sample_n
-        )
-        ale_mean = compute_sub_ale(
-            samples,
-            ma,
-            subsampling_cfwe_threshold,
-            bin_edges,
-            bin_centers,
-            step,
-            cluster_forming_threshold,
-        )
-        plot_and_save(
-            ale_mean,
-            nii_path=project_path / f"CV/Volumes/{meta_name}_sub_ale_{target_n}.nii",
-        )
+        else:
+            print(f"{meta_name} - computing cv ale.")
 
-        print(f"{meta_name} - probabilistic ALE done!")
-        return
+            samples = generate_unique_subsamples(
+                total_n=exp_df.shape[0], target_n=target_n, sample_n=sample_n
+            )
+            ale_mean = compute_sub_ale(
+                samples,
+                ma,
+                subsampling_cfwe_threshold,
+                bin_edges,
+                bin_centers,
+                step,
+                cluster_forming_threshold,
+            )
+            plot_and_save(
+                ale_mean,
+                nii_path=project_path
+                / f"CV/Volumes/{meta_name}_sub_ale_{target_n}.nii",
+            )
+
+            print(f"{meta_name} - probabilistic ALE done!")
 
     else:
         # Full ALE

@@ -29,8 +29,8 @@ def compile_experiments(conditions, tasks):
     mask_names : list of str
         List of mask file names without extensions.
     """
-    included_experiments = []
-    excluded_experiments = []
+    included_experiments = set()
+    excluded_experiments = set()
     masks = []
     mask_names = []
 
@@ -40,25 +40,25 @@ def compile_experiments(conditions, tasks):
 
         # Check if the experiment exists in tasks and handle exceptions
         try:
-            experiment_index = tasks[tasks.Name == tag].ExpIndex.to_list()[0]
+            experiment_index = tasks[tasks.Name == tag].ExpIndex.values[0]
         except IndexError:
             raise ValueError(f"Experiment '{tag}' not found in tasks.")
 
         if operation == "+":
-            included_experiments.append(experiment_index)
+            included_experiments.update(experiment_index)
 
         elif operation == "-":
-            excluded_experiments.append(experiment_index)
+            excluded_experiments.update(experiment_index)
 
         elif operation == "?":
             # Intersect experiments in included_experiments
-            flat_list = [exp for exp_list in included_experiments for exp in exp_list]
-            # Deduplicate and reassign
-            included_experiments = [list(set(flat_list))]
+            included_experiments = set(
+                included_experiments
+            )  # Ensure unique entries only
 
         elif operation == "$":
             mask_file = condition[1:]
-            mask = nb.load(mask_file).get_fdata()  # type: ignore
+            mask = nb.loadsave.load(mask_file).get_fdata()  # type: ignore
 
             if np.unique(mask).shape[0] == 2:
                 # Binary mask
@@ -68,14 +68,10 @@ def compile_experiments(conditions, tasks):
                 masks.append(mask.astype(int))
             mask_names.append(mask_file[:-4])
 
-    # Convert included_experiments and excluded_experiments to sets
-    included_set = set(included_experiments)
-
-    if excluded_experiments:
-        excluded_set = set(excluded_experiments)
-        included_set = included_set.difference(excluded_set)
+    # Apply difference between included and excluded experiments
+    included_experiments = included_experiments.difference(excluded_experiments)
 
     # Convert back to list for final result
-    included_experiments = list(included_set)
+    included_experiments = list(included_experiments)
 
     return included_experiments, masks, mask_names
