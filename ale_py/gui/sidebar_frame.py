@@ -1,6 +1,7 @@
 import customtkinter
-from gui.parameter_window import ParameterWarningWindow, ParameterWindow
+
 from gui.add_analysis_window import AddAnalysisWindow
+from gui.parameter_window import ParameterWarningWindow, ParameterWindow
 
 
 class Sidebar_Frame(customtkinter.CTkFrame):
@@ -12,76 +13,79 @@ class Sidebar_Frame(customtkinter.CTkFrame):
 
         self.import_dataset_button = customtkinter.CTkButton(
             master=self,
-            text='Import Dataset',
-            command=self.import_dataset_file_button_event)
-        self.import_dataset_button.grid(
-            row=0, column=0, padx=20, pady=(20, 20))
+            text="Import Dataset",
+            command=self.import_dataset_file_button_event,
+        )
+        self.import_dataset_button.grid(row=0, column=0, padx=20, pady=(20, 20))
 
         self.add_analysis_button = customtkinter.CTkButton(
             master=self,
-            text='Add Analysis',
+            text="Add Analysis",
             command=self.add_analysis_button_event,
-            state='disabled')
+            state="disabled",
+        )
         self.add_analysis_button.grid(row=1, column=0, padx=20, pady=(20, 5))
 
         self.save_analysis_button = customtkinter.CTkButton(
             master=self,
-            text='Save Analysis',
+            text="Save Analysis",
             command=self.save_analysis_button_event,
-            state='disabled')
+            state="disabled",
+        )
         self.save_analysis_button.grid(row=2, column=0, padx=20, pady=(5, 5))
 
         self.reset_table_button = customtkinter.CTkButton(
             self,
             text="Reset Analysis",
             command=self.reset_table_button_event,
-            state='disabled')
+            state="disabled",
+        )
         self.reset_table_button.grid(row=3, column=0, padx=20, pady=(5, 5))
 
         self.ale_parameters_button = customtkinter.CTkButton(
-            master=self,
-            text='ALE Parameters',
-            command=self.ale_parameters_button_event)
+            master=self, text="ALE Parameters", command=self.ale_parameters_button_event
+        )
         self.ale_parameters_button.grid(row=4, column=0, padx=20, pady=10)
 
         self.run_analysis_button = customtkinter.CTkButton(
             master=self,
-            text='Run Analysis',
-            fg_color='green4',
-            hover_color='dark green',
-            command=self.run_analysis_button_event)
+            text="Run Analysis",
+            fg_color="green4",
+            hover_color="dark green",
+            command=self.run_analysis_button_event,
+        )
         self.run_analysis_button.grid(row=6, column=0, padx=20, pady=10)
 
         self.stop_analysis_button = customtkinter.CTkButton(
             master=self,
-            text='Stop Analysis',
-            fg_color='red3',
-            hover_color='red4',
-            command=self.stop_analysis_button_event)
+            text="Stop Analysis",
+            fg_color="red3",
+            hover_color="red4",
+            command=self.stop_analysis_button_event,
+        )
         self.stop_analysis_button.grid(row=7, column=0, padx=20, pady=10)
 
         self.appearance_mode_label = customtkinter.CTkLabel(
-            master=self,
-            text="Appearance Mode:",
-            anchor="w")
+            master=self, text="Appearance Mode:", anchor="w"
+        )
         self.appearance_mode_label.grid(row=8, column=0, padx=20, pady=(10, 0))
         self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(
             master=self,
             values=["Light", "Dark", "System"],
-            command=self.change_appearance_mode_event)
+            command=self.change_appearance_mode_event,
+        )
         self.appearance_mode_optionemenu.set("Dark")
-        self.appearance_mode_optionemenu.grid(
-            row=9, column=0, padx=20, pady=(10, 10))
+        self.appearance_mode_optionemenu.grid(row=9, column=0, padx=20, pady=(10, 10))
 
         self.scaling_label = customtkinter.CTkLabel(
-            master=self,
-            text="UI Scaling:",
-            anchor="w")
+            master=self, text="UI Scaling:", anchor="w"
+        )
         self.scaling_label.grid(row=10, column=0, padx=20, pady=(10, 0))
         self.scaling_optionemenu = customtkinter.CTkOptionMenu(
             master=self,
             values=["80%", "90%", "100%", "110%", "120%"],
-            command=self.change_scaling_event)
+            command=self.change_scaling_event,
+        )
         self.scaling_optionemenu.set("100%")
         self.scaling_optionemenu.grid(row=11, column=0, padx=20, pady=(10, 20))
 
@@ -92,14 +96,17 @@ class Sidebar_Frame(customtkinter.CTkFrame):
         filename = customtkinter.filedialog.askopenfilename()
         if filename:
             self.controller.load_dataset_file(filename)
-            print('Succesfully imported a meta-analysis dataset file.')
-            print('Enabled manually adding analyses.')
-            self.add_analysis_button.configure(state='normal')
-            self.save_analysis_button.configure(state='normal')
-            self.reset_table_button.configure(state='normal')
+            print("Succesfully imported a meta-analysis dataset file.")
+            print("Enabled manually adding analyses.")
+            self.add_analysis_button.configure(state="normal")
+            self.save_analysis_button.configure(state="normal")
+            self.reset_table_button.configure(state="normal")
 
     def add_analysis_button_event(self):
-        if self.add_analysis_window is None or not self.add_analysis_window.winfo_exists():
+        if (
+            self.add_analysis_window is None
+            or not self.add_analysis_window.winfo_exists()
+        ):
             self.add_analysis_window = AddAnalysisWindow(self, self.controller)
         else:
             self.add_analysis_window.focus()
@@ -113,9 +120,13 @@ class Sidebar_Frame(customtkinter.CTkFrame):
 
     def ale_parameters_button_event(self):
         if self.parameter_window is None or not self.parameter_window.winfo_exists():
-            if self.parameter_warning_window is None or not self.parameter_warning_window.winfo_exists():
+            if (
+                self.parameter_warning_window is None
+                or not self.parameter_warning_window.winfo_exists()
+            ):
                 self.parameter_warning_window = ParameterWarningWindow(
-                    self, self.controller)
+                    self, self.controller
+                )
         else:
             self.parameter_warning_window.focus()
 

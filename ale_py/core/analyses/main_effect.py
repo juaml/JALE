@@ -153,8 +153,7 @@ def main_effect(
             ) as f:
                 pickle.dump(cfwe_null, f)
         if Path(
-            project_path
-            / f"CV/NullDistributions/{meta_name}_montecarlo_{target_n}.pickle"
+            project_path / f"CV/Volumes/{meta_name}_sub_ale_{target_n}.nii"
         ).exists():
             logger.info(f"{meta_name} - loading cv ale")
 

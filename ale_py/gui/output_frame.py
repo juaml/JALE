@@ -1,6 +1,7 @@
-import customtkinter
-import tkinter
 import sys
+import tkinter
+
+import customtkinter
 
 # CustomText widget for displaying the output
 
@@ -21,6 +22,7 @@ class CustomText(tkinter.Text):
     def flush(self):
         pass
 
+
 # Redirect standard output to the CustomText widget
 
 
@@ -33,6 +35,7 @@ class RedirectedStdout:
 
     def flush(self):
         pass
+
 
 # Frame to hold the CustomText widget
 
@@ -47,9 +50,10 @@ class OutputFrame(customtkinter.CTkFrame):
         self.text_widget.grid(row=0, column=0, sticky="nsew")
 
         self.scrollbar = customtkinter.CTkScrollbar(
-            self, command=self.text_widget.yview)
+            self, command=self.text_widget.yview
+        )
         self.scrollbar.grid(row=0, column=1, sticky="ns")
-        self.text_widget['yscrollcommand'] = self.scrollbar.set
+        self.text_widget["yscrollcommand"] = self.scrollbar.set
 
         self.redirect_stdout()
 
