@@ -17,7 +17,7 @@ To install the ALE Meta-Analysis Package, run:
 
 ```bash
 pip install alepy
-
+```
 ## Usage
 
 Here’s how to use the project:
@@ -39,7 +39,7 @@ Running an ALE can be done in two ways:
 from alepy import main
 
 main(yaml_path='/path/to/yaml/file')
-
+```
 ## Background and References
 
 This project is based on research by 
