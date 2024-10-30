@@ -1,7 +1,4 @@
-import tkinter
-
 import customtkinter
-
 from assets.ascii_logo import ascii_logo
 from gui.analysis_table_frame import AnalysisTableFrame
 from gui.controller import Controller
