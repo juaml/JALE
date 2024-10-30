@@ -4,3 +4,4 @@ __pycache__/
 *.ipynb
 ruff.toml
 *.code-workspace
+gui_example.py
