@@ -31,7 +31,11 @@ For example files please check the docs folder.
 
 Running an ALE can be done in two ways:
 
-1. via CLI: python -m alepy /path/to/yaml/file
+1. via CLI: 
+
+```bash
+python -m alepy /path/to/yaml/file
+```
 
 2. in Python:
 
@@ -40,10 +44,18 @@ from alepy import main
 
 main(yaml_path='/path/to/yaml/file')
 ```
+
+## Features
+
+- Standard ("Main Effect") ALE: Brief description
+- Probabilistic ("Cross-Validated") ALE: Brief description
+- Standard ALE Contrast: Brief description
+- Balanced ALE Contrast: Brief description
+
 ## Background and References
 
 This project is based on research by 
-- [Author Eickhoff et al., 2012](https://doi.org/10.1016/j.neuroimage.2011.09.017).
-- [Author Eickhoff et al., 2016](https://doi.org/10.1016/j.neuroimage.2016.04.072).
-- [Author Frahm et al., 2022](https://doi.org/10.1002/hbm.25898).
-- [Author Frahm et al., 2023](https://doi.org/10.1016/j.neuroimage.2023.120383).
+- [Eickhoff et al., 2012](https://doi.org/10.1016/j.neuroimage.2011.09.017).
+- [Eickhoff et al., 2016](https://doi.org/10.1016/j.neuroimage.2016.04.072).
+- [Frahm et al., 2022](https://doi.org/10.1002/hbm.25898).
+- [Frahm et al., 2023](https://doi.org/10.1016/j.neuroimage.2023.120383).
