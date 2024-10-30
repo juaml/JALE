@@ -21,6 +21,7 @@ setup(
         "PyYAML>=6.0.2",
         "scipy>=1.14.1",
         "xgboost>=2.1.2",
+        "openpyxl>=3.1.5",
     ],
     classifiers=[  # Classifiers help users find your project
         "Programming Language :: Python :: 3",

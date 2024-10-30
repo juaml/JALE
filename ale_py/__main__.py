@@ -5,7 +5,6 @@ from pathlib import Path
 
 import numpy as np
 import yaml
-
 from core.analyses.contrast import balanced_contrast, contrast
 from core.analyses.main_effect import main_effect
 from core.utils.compile_experiments import compile_experiments
@@ -396,9 +395,13 @@ def check_and_run_main_effect(
             )
 
 
-def main():
+def run_ale(yaml_path=None):
     # Load config and set up paths
-    yaml_path = sys.argv[1]
+    if yaml_path is None:
+        if len(sys.argv) == 2:
+            yaml_path = sys.argv[1]
+        else:
+            raise ValueError("No input file provided. Please specify an input file.")
     config = load_config(yaml_path)
     project_path = setup_project_folder(config)
 
@@ -433,4 +436,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_ale()

@@ -245,21 +245,24 @@ def balanced_contrast(
             r_diff, prior, min_diff, max_diff = pickle.load(f)
     else:
         logger.info(
-            f"{meta_names[0]} x {meta_names[1]} - computing actual diff and null extremes"
+            f"{meta_names[0]} x {meta_names[1]} - computing average subsample difference"
         )
         prior = np.zeros(BRAIN_ARRAY_SHAPE).astype(bool)
         prior[GM_PRIOR] = 1
 
-        r_diff = Parallel(n_jobs=nprocesses)(
+        r_diff = Parallel(n_jobs=nprocesses, verbose=2)(
             delayed(compute_balanced_ale_diff)(ma1, ma2, prior, target_n)
             for i in range(difference_iterations)
         )
         r_diff = np.mean(np.array(r_diff), axis=0)
 
+        logger.info(
+            f"{meta_names[0]} x {meta_names[1]} - computing null distribution of balanced differences"
+        )
         nfoci1 = exp_dfs[0].NumberOfFoci
         nfoci2 = exp_dfs[1].NumberOfFoci
         min_diff, max_diff = zip(
-            *Parallel(n_jobs=nprocesses)(
+            *Parallel(n_jobs=nprocesses, verbose=2)(
                 delayed(compute_balanced_null_diff)(
                     nfoci1,
                     kernels1,
