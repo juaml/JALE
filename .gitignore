@@ -5,3 +5,4 @@ __pycache__/
 ruff.toml
 *.code-workspace
 gui_example.py
+.python-version
