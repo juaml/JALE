@@ -26,10 +26,8 @@ def folder_setup(path):
             "NullDistributions",
         ],
         "Results/MainEffect/CV": ["Volumes", "NullDistributions"],
-        "Results/MainEffect/ROI": ["Plots", "NullDistributions"],
         "Results/Contrast/Full": ["NullDistributions", "Conjunctions"],
         "Results/Contrast/Balanced": ["NullDistributions", "Conjunctions"],
-        "Results/Contrast/ROI": ["Plots", "NullDistributions"],
     }
 
     # Iterate over the base directories and their subdirectories
@@ -43,3 +41,4 @@ def folder_setup(path):
             )  # Create folder, including any necessary parents
 
     (path / "logs").mkdir(parents=True, exist_ok=True)
+    (path / "MainEffect/ROI").mkdir(parents=True, exist_ok=True)

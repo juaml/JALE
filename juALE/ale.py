@@ -7,6 +7,7 @@ import numpy as np
 import yaml
 from core.analyses.contrast import balanced_contrast, contrast
 from core.analyses.main_effect import main_effect
+from core.analyses.roi import roi_ale
 from core.utils.compile_experiments import compile_experiments
 from core.utils.contribution import contribution
 from core.utils.folder_setup import folder_setup
@@ -35,7 +36,7 @@ def setup_project_folder(config):
 
 def setup_logger(project_path):
     """Initialize logging with a file handler in the project directory."""
-    logger = logging.getLogger("pyALE_logger")
+    logger = logging.getLogger("ale_logger")
     logger.setLevel(logging.DEBUG)
 
     # Console handler
@@ -97,11 +98,11 @@ def run_main_effect(analysis_df, row_idx, project_path, params, exp_all_df, task
     None
         The function performs computations and saves the results.
     """
-    logger = logging.getLogger("pyALE_logger")
+    logger = logging.getLogger("ale_logger")
     logger.info("Running Main-Effect Analysis")
     meta_name = analysis_df.iloc[row_idx, 1]
     conditions = analysis_df.iloc[row_idx, 2:].dropna().to_list()
-    exp_idxs, _, _ = compile_experiments(conditions, tasks)
+    exp_idxs, masks, mask_names = compile_experiments(conditions, tasks)
     exp_df = exp_all_df.loc[exp_idxs].reset_index(drop=True)
 
     if len(exp_idxs) <= 17:
@@ -124,6 +125,18 @@ def run_main_effect(analysis_df, row_idx, project_path, params, exp_all_df, task
         nprocesses=params["nprocesses"],
     )
     contribution(project_path, exp_df, meta_name, tasks, params["tfce_enabled"])
+
+    # Check for ROI masks and run ROI ALE
+    if len(masks) > 0:
+        for idx, mask in enumerate(masks):
+            roi_ale(
+                project_path,
+                exp_df,
+                meta_name,
+                mask,
+                mask_names[idx],
+                monte_carlo_iterations=params["monte_carlo_iterations"],
+            )
 
 
 def run_probabilistic_ale(
@@ -154,7 +167,7 @@ def run_probabilistic_ale(
     None
         The function performs computations and saves the results.
     """
-    logger = logging.getLogger("pyALE_logger")
+    logger = logging.getLogger("ale_logger")
     logger.info("Running Probabilistic ALE")
     meta_name = analysis_df.iloc[row_idx, 1]
     conditions = analysis_df.iloc[row_idx, 2:].dropna().to_list()

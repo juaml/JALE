@@ -17,7 +17,7 @@ from core.utils.compute import (
 from core.utils.plot_and_save import plot_and_save
 from core.utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR
 
-logger = logging.getLogger("pyALE_logger")
+logger = logging.getLogger("ale_logger")
 
 
 def contrast(

@@ -58,7 +58,7 @@ def compile_experiments(conditions, tasks):
 
         elif operation == "$":
             mask_file = condition[1:]
-            mask = nb.loadsave.load(mask_file).get_fdata()  # type: ignore
+            mask = nb.loadsave.load(mask_file).get_fdata()
 
             if np.unique(mask).shape[0] == 2:
                 # Binary mask

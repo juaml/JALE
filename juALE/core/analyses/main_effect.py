@@ -24,7 +24,7 @@ from core.utils.cutoff_prediction import predict_cutoff
 from core.utils.kernel import create_kernel_array
 from core.utils.plot_and_save import plot_and_save
 
-logger = logging.getLogger("pyALE_logger")
+logger = logging.getLogger("ale_logger")
 
 
 def main_effect(
