@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="JALE",  # Unique name for your package
-    version="0.1.0",  # Initial version
+    version="0.1.1",  # Initial version
     description="Package allowing users to run Activation Likelihood Estimation Meta-Analysis",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
