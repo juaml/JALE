@@ -3,8 +3,8 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 
-from core.utils.compute import compute_ale, compute_ma
-from core.utils.template import GM_SAMPLE_SPACE
+from jale.core.utils.compute import compute_ale, compute_ma
+from jale.core.utils.template import GM_SAMPLE_SPACE
 
 logger = logging.getLogger("ale_logger")
 

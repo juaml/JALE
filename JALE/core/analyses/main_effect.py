@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-from core.utils.compute import (
+from jale.core.utils.compute import (
     compute_ale,
     compute_clusters,
     compute_hx,
@@ -20,9 +20,9 @@ from core.utils.compute import (
     generate_unique_subsamples,
     illustrate_foci,
 )
-from core.utils.cutoff_prediction import predict_cutoff
-from core.utils.kernel import create_kernel_array
-from core.utils.plot_and_save import plot_and_save
+from jale.core.utils.cutoff_prediction import predict_cutoff
+from jale.core.utils.kernel import create_kernel_array
+from jale.core.utils.plot_and_save import plot_and_save
 
 logger = logging.getLogger("ale_logger")
 

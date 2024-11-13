@@ -1,6 +1,6 @@
 import sys
 
-from core.ale import run_ale
+from jale.ale import run_ale
 
 
 def cli_ale():

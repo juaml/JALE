@@ -7,15 +7,15 @@ import numpy as np
 from joblib import Parallel, delayed
 from scipy.stats import norm
 
-from core.utils.compute import (
+from jale.core.utils.compute import (
     compute_ale,
     compute_balanced_ale_diff,
     compute_balanced_null_diff,
     compute_permuted_ale_diff,
     compute_sig_diff,
 )
-from core.utils.plot_and_save import plot_and_save
-from core.utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR
+from jale.core.utils.plot_and_save import plot_and_save
+from jale.core.utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR
 
 logger = logging.getLogger("ale_logger")
 

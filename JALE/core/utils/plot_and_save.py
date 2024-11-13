@@ -1,6 +1,6 @@
 import nibabel as nb
 
-from core.utils.template import GM_PRIOR, MNI_AFFINE
+from jale.core.utils.template import GM_PRIOR, MNI_AFFINE
 
 
 def plot_and_save(arr, nii_path):

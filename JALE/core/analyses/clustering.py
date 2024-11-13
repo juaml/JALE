@@ -12,9 +12,9 @@ from sklearn.metrics import (
 from sklearn.utils import resample
 from sklearn_extra.cluster import KMedoids
 
-from core.utils.compute import compute_ma
-from core.utils.kernel import create_kernel_array
-from core.utils.template import GM_PRIOR
+from jale.core.utils.compute import compute_ma
+from jale.core.utils.kernel import create_kernel_array
+from jale.core.utils.template import GM_PRIOR
 
 
 def plot_cor_matrix(project_path, correlation_matrix):

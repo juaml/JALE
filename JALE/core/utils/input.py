@@ -3,8 +3,8 @@ import sys
 import numpy as np
 import pandas as pd
 
-from core.utils.tal2icbm_spm import tal2icbm_spm
-from core.utils.template import MNI_AFFINE
+from jale.core.utils.tal2icbm_spm import tal2icbm_spm
+from jale.core.utils.template import MNI_AFFINE
 
 
 def load_excel(filepath, type="analysis"):

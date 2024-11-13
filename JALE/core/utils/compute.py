@@ -4,9 +4,9 @@ from scipy import ndimage
 from scipy.special import comb
 from scipy.stats import norm
 
-from core.utils.kernel import kernel_convolution
-from core.utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR, GM_SAMPLE_SPACE
-from core.utils.tfce_par import tfce_par
+from jale.core.utils.kernel import kernel_convolution
+from jale.core.utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR, GM_SAMPLE_SPACE
+from jale.core.utils.tfce_par import tfce_par
 
 EPS = np.finfo(float).eps
 

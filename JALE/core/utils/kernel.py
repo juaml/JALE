@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from core.utils.template import PAD_SHAPE
+from jale.core.utils.template import PAD_SHAPE
 
 
 def create_kernel_array(exp_df):

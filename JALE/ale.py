@@ -5,14 +5,15 @@ from pathlib import Path
 
 import numpy as np
 import yaml
-from core.analyses.clustering import clustering
-from core.analyses.contrast import balanced_contrast, contrast
-from core.analyses.main_effect import main_effect
-from core.analyses.roi import roi_ale
-from core.utils.compile_experiments import compile_experiments
-from core.utils.contribution import contribution
-from core.utils.folder_setup import folder_setup
-from core.utils.input import load_excel, read_experiment_info
+
+from jale.core.analyses.clustering import clustering
+from jale.core.analyses.contrast import balanced_contrast, contrast
+from jale.core.analyses.main_effect import main_effect
+from jale.core.analyses.roi import roi_ale
+from jale.core.utils.compile_experiments import compile_experiments
+from jale.core.utils.contribution import contribution
+from jale.core.utils.folder_setup import folder_setup
+from jale.core.utils.input import load_excel, read_experiment_info
 
 
 def load_config(yaml_path):

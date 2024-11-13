@@ -2,9 +2,9 @@ import numpy as np
 from nibabel import loadsave
 from scipy import ndimage
 
-from core.utils.compute import compute_ale, compute_ma
-from core.utils.kernel import create_kernel_array
-from core.utils.template import MNI_AFFINE
+from jale.core.utils.compute import compute_ale, compute_ma
+from jale.core.utils.kernel import create_kernel_array
+from jale.core.utils.template import MNI_AFFINE
 
 
 def contribution(project_path, exp_df, exp_name, tasks, tfce_enabled=True):
