@@ -1,4 +1,4 @@
-# ALEpy
+# JALE
 
 A Python package for conducting ALE (Activation Likelihood Estimation) meta-analyses, supporting a range of analysis workflows: standard ALE, probabilistic or cross-validated ALE, standard ALE contrast, and balanced ALE contrast.
 
@@ -16,13 +16,13 @@ A Python package for conducting ALE (Activation Likelihood Estimation) meta-anal
 To install the ALE Meta-Analysis Package, run:
 
 ```bash
-pip install alepy
+pip install jale
 ```
 ## Usage
 
 Here’s how to use the project:
 
-ALEpy requires a project folder that contains 3 files:
+JALE requires a project folder that contains 3 files:
 1. Experiment Data (Author, Subjects, Coordinates, Tags)
 2. Analysis Data (Type of ALE, Tags to be included)
 3. Yaml config file (specifying project folder path, filenames and ALE parameters)

@@ -96,8 +96,6 @@ class Sidebar_Frame(customtkinter.CTkFrame):
         filename = customtkinter.filedialog.askopenfilename()
         if filename:
             self.controller.load_dataset_file(filename)
-            print("Succesfully imported a meta-analysis dataset file.")
-            print("Enabled manually adding analyses.")
             self.add_analysis_button.configure(state="normal")
             self.save_analysis_button.configure(state="normal")
             self.reset_table_button.configure(state="normal")

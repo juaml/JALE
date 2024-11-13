@@ -1,14 +1,14 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="juALE",  # Unique name for your package
+    name="JALE",  # Unique name for your package
     version="0.1.0",  # Initial version
     description="Package allowing users to run Activation Likelihood Estimation Meta-Analysis",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     author="Lennart Frahm",
     author_email="l.frahm@mailbox.org",
-    url="https://github.com/LenFrahm/ALEpy",
+    url="https://github.com/LenFrahm/JALE",
     license="MIT",
     packages=find_packages(),  # Automatically find packages in the project
     install_requires=[  # List of dependencies

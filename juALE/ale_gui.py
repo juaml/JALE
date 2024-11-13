@@ -17,7 +17,7 @@ class App(customtkinter.CTk):
         super().__init__()
 
         self.title("pyALE-GUI")
-        self.geometry("1800x800")
+        self.geometry("1200x600")
         self.grid_columnconfigure((1, 2), weight=1)
         self.grid_rowconfigure(1, weight=1)
 
@@ -39,7 +39,6 @@ class App(customtkinter.CTk):
         self.output_log_frame.grid(
             row=0, rowspan=2, column=2, padx=(0, 10), pady=(10, 10), sticky="nsew"
         )
-        print(ascii_logo)
 
         self.controller = Controller(
             self.sidebar_frame,
