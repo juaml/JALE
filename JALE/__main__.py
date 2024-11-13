@@ -1,6 +1,6 @@
 import sys
 
-from ale import run_ale
+from core.ale import run_ale
 
 
 def cli_ale():
