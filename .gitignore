@@ -6,3 +6,4 @@ ruff.toml
 *.code-workspace
 gui_example.py
 .python-version
+JALE.egg-info/

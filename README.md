@@ -34,13 +34,13 @@ Running an ALE can be done in two ways:
 1. via CLI: 
 
 ```bash
-python -m alepy /path/to/yaml/file
+python -m jale /path/to/yaml/file
 ```
 
 2. in Python:
 
 ```python
-from alepy import main
+from jale import main
 
 main(yaml_path='/path/to/yaml/file')
 ```
