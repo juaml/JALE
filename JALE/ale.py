@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import yaml
+from core.analyses.clustering import clustering
 from core.analyses.contrast import balanced_contrast, contrast
 from core.analyses.main_effect import main_effect
 from core.analyses.roi import roi_ale
@@ -384,6 +385,20 @@ def check_and_run_main_effect(
             )
 
 
+def run_ma_clustering(analysis_df, row_idx, project_path, params, exp_all_df, tasks):
+    logger = logging.getLogger("ale_logger")
+    logger.info("Running MA Clustering")
+
+    meta_name = analysis_df.iloc[row_idx, 1]
+    conditions = analysis_df.iloc[row_idx, 2:].dropna().to_list()
+    exp_idxs, masks, mask_names = compile_experiments(conditions, tasks)
+    exp_df = exp_all_df.loc[exp_idxs].reset_index(drop=True)
+
+    logger.info(
+        f"{meta_name} : {len(exp_idxs)} experiments; average of {exp_df.Subjects.mean():.2f} subjects per experiment"
+    )
+
+
 def run_ale(yaml_path=None):
     # Load config and set up paths
     config = load_config(yaml_path)
@@ -416,5 +431,9 @@ def run_ale(yaml_path=None):
             )
         elif analysis_df.iloc[row_idx, 0][0] == "B":
             run_balanced_contrast(
+                analysis_df, row_idx, project_path, params, exp_all_df, tasks
+            )
+        elif analysis_df.iloc[row_idx, 0] == "Cluster":
+            run_ma_clustering(
                 analysis_df, row_idx, project_path, params, exp_all_df, tasks
             )

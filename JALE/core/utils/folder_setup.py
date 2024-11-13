@@ -41,4 +41,6 @@ def folder_setup(path):
             )  # Create folder, including any necessary parents
 
     (path / "logs").mkdir(parents=True, exist_ok=True)
-    (path / "MainEffect/ROI").mkdir(parents=True, exist_ok=True)
+    (path / "Results/MainEffect/ROI").mkdir(parents=True, exist_ok=True)
+
+    (path / "Results/MA_Clustering").mkdir(parents=True, exist_ok=True)

@@ -1,8 +1,8 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="JALE",  # Unique name for your package
-    version="0.1.1",  # Initial version
+    name="jale",  # Unique name for your package
+    version="0.1.3",  # Initial version
     description="Package allowing users to run Activation Likelihood Estimation Meta-Analysis",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -15,13 +15,14 @@ setup(
         "customtkinter>=5.2.2",
         "joblib>=1.3.2",
         "nibabel>=5.3.2",
-        "numpy>=2.1.2",
+        "numpy==1.26.3",
         "pandas>=2.2.3",
         "pytest>=8.0.0",
         "PyYAML>=6.0.2",
         "scipy>=1.14.1",
         "xgboost>=2.1.2",
         "openpyxl>=3.1.5",
+        "scikit-learn-extra>=0.3.0",
     ],
     classifiers=[  # Classifiers help users find your project
         "Programming Language :: Python :: 3",
