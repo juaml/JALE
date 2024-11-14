@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="jale",  # Unique name for your package
-    version="0.1.7",  # Initial version
+    version="0.1.10",  # Initial version
     description="Package allowing users to run Activation Likelihood Estimation Meta-Analysis",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -27,6 +27,10 @@ setup(
         "seaborn>=0.12.2",
         "setuptools>=65.5.0",
     ],
+    package_data={
+        "jale": ["assets/*"],  # Include all files in the assets folder
+    },
+    include_package_data=True,
     classifiers=[  # Classifiers help users find your project
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

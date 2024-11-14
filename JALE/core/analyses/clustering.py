@@ -261,5 +261,3 @@ def clustering(
             null_iterations=500,
         )
     )
-
-    si
