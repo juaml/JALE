@@ -1,6 +1,6 @@
 import pandas as pd
 
-from core.utils.input import load_excel, read_experiment_info
+from jale.core.utils.input import load_excel, read_experiment_info
 
 
 class Controller:

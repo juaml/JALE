@@ -1,7 +1,7 @@
 import customtkinter
 
-from gui.add_analysis_window import AddAnalysisWindow
-from gui.parameter_window import ParameterWarningWindow, ParameterWindow
+from jale.gui.add_analysis_window import AddAnalysisWindow
+from jale.gui.parameter_window import ParameterWarningWindow, ParameterWindow
 
 
 class Sidebar_Frame(customtkinter.CTkFrame):

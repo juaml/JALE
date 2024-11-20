@@ -1,10 +1,10 @@
 import customtkinter
-from assets.ascii_logo import ascii_logo
-from gui.analysis_table_frame import AnalysisTableFrame
-from gui.controller import Controller
-from gui.dataset_table_frame import DatasetTableFrame
-from gui.output_frame import OutputFrame
-from gui.sidebar_frame import Sidebar_Frame
+
+from jale.gui.analysis_table_frame import AnalysisTableFrame
+from jale.gui.controller import Controller
+from jale.gui.dataset_table_frame import DatasetTableFrame
+from jale.gui.output_frame import OutputFrame
+from jale.gui.sidebar_frame import Sidebar_Frame
 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme(

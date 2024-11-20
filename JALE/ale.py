@@ -8,7 +8,7 @@ import yaml
 
 from jale.core.analyses.clustering import clustering
 from jale.core.analyses.contrast import balanced_contrast, contrast
-from jale.core.analyses.main_effect import main_effect
+from jale.core.analyses.main_effect import main_effect, probabilistic_ale
 from jale.core.analyses.roi import roi_ale
 from jale.core.utils.compile_experiments import compile_experiments
 from jale.core.utils.contribution import contribution
@@ -36,29 +36,32 @@ def setup_project_folder(config):
     return project_path
 
 
-def setup_logger(project_path):
+def setup_logger(project_path: Path):
     """Initialize logging with a file handler in the project directory."""
     logger = logging.getLogger("ale_logger")
-    logger.setLevel(logging.DEBUG)
 
-    # Console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_format = logging.Formatter("%(levelname)s - %(message)s")
-    console_handler.setFormatter(console_format)
+    # Prevent adding handlers multiple times
+    if not logger.hasHandlers():
+        logger.setLevel(logging.DEBUG)
 
-    # File handler in the project directory
-    start_time = datetime.now().strftime("%Y%m%d_%H%M")
-    file_handler = logging.FileHandler(project_path / f"logs/{start_time}.log")
-    file_handler.setLevel(logging.DEBUG)
-    file_format = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    file_handler.setFormatter(file_format)
+        # Console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_format = logging.Formatter("%(levelname)s - %(message)s")
+        console_handler.setFormatter(console_format)
 
-    # Add handlers to the logger
-    logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
+        # File handler in the project directory
+        start_time = datetime.now().strftime("%Y%m%d_%H%M")
+        file_handler = logging.FileHandler(project_path / f"logs/{start_time}.log")
+        file_handler.setLevel(logging.DEBUG)
+        file_format = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        file_handler.setFormatter(file_format)
+
+        # Add handlers to the logger
+        logger.addHandler(console_handler)
+        logger.addHandler(file_handler)
 
     return logger
 
@@ -101,20 +104,20 @@ def run_main_effect(analysis_df, row_idx, project_path, params, exp_all_df, task
         The function performs computations and saves the results.
     """
     logger = logging.getLogger("ale_logger")
-    logger.info("Running Main-Effect Analysis")
     meta_name = analysis_df.iloc[row_idx, 1]
+
+    result_path = (
+        project_path / f"Results/MainEffect/Full/Volumes/{meta_name}_cFWE05.nii"
+    )
+    if result_path.exists():
+        logger.info(f"Main Effect results for {meta_name} already exist.")
+        return
+
+    logger.info("Running Main-Effect Analysis")
     conditions = analysis_df.iloc[row_idx, 2:].dropna().to_list()
     exp_idxs, masks, mask_names = compile_experiments(conditions, tasks)
     exp_df = exp_all_df.loc[exp_idxs].reset_index(drop=True)
 
-    if len(exp_idxs) <= 17:
-        logger.warning(
-            "Analysis contains less than 18 experiments; interpret results carefully."
-        )
-
-    logger.info(
-        f"{meta_name} : {len(exp_idxs)} experiments; average of {exp_df.Subjects.mean():.2f} subjects per experiment"
-    )
     main_effect(
         project_path,
         exp_df,
@@ -128,8 +131,7 @@ def run_main_effect(analysis_df, row_idx, project_path, params, exp_all_df, task
     )
     contribution(project_path, exp_df, meta_name, tasks, params["tfce_enabled"])
 
-    # Check for ROI masks and run ROI ALE
-    if len(masks) > 0:
+    if masks:
         for idx, mask in enumerate(masks):
             roi_ale(
                 project_path,
@@ -170,15 +172,29 @@ def run_probabilistic_ale(
         The function performs computations and saves the results.
     """
     logger = logging.getLogger("ale_logger")
-    logger.info("Running Probabilistic ALE")
     meta_name = analysis_df.iloc[row_idx, 1]
+
+    target_n = (
+        int(analysis_df.iloc[row_idx, 0][1:])
+        if len(analysis_df.iloc[row_idx, 0]) > 1
+        else None
+    )
+
+    result_path = (
+        project_path
+        / f"Results/MainEffect/CV/Volumes/{meta_name}_sub_ale_{target_n}.nii"
+    )
+    if result_path.exists():
+        logger.info(f"Probabilistic ALE results for {meta_name} already exist.")
+        return
+
+    logger.info("Running Probabilistic ALE")
     conditions = analysis_df.iloc[row_idx, 2:].dropna().to_list()
     exp_idxs, _, _ = compile_experiments(conditions, tasks)
     exp_df = exp_all_df.loc[exp_idxs].reset_index(drop=True)
 
-    if len(analysis_df.iloc[row_idx, 0]) > 1:
-        target_n = int(analysis_df.iloc[row_idx, 0][1:])
-        main_effect(
+    if target_n:
+        probabilistic_ale(
             project_path,
             exp_df,
             meta_name,
@@ -220,9 +236,31 @@ def run_contrast_analysis(
         specified `project_path` directory.
     """
     meta_names, exp_dfs = setup_contrast_data(analysis_df, row_idx, exp_all_df, tasks)
-    check_and_run_main_effect(meta_names, exp_dfs, project_path, params, tasks)
 
-    # Remove overlap in experiments for contrast analysis
+    for idx, meta_name in enumerate(meta_names):
+        result_path = (
+            project_path / f"Results/MainEffect/Full/Volumes/{meta_name}_cFWE05.nii"
+        )
+        if not result_path.exists():
+            logger = logging.getLogger("ale_logger")
+            logger.info(
+                f"Running main effect for {meta_name} as prerequisite for contrast analysis"
+            )
+            main_effect(
+                project_path,
+                exp_dfs[idx],
+                meta_name,
+                tfce_enabled=params["tfce_enabled"],
+                cutoff_predict_enabled=params["cutoff_predict_enabled"],
+                bin_steps=params["bin_steps"],
+                cluster_forming_threshold=params["cluster_forming_threshold"],
+                monte_carlo_iterations=params["monte_carlo_iterations"],
+                nprocesses=params["nprocesses"],
+            )
+            contribution(
+                project_path, exp_dfs[idx], meta_name, tasks, params["tfce_enabled"]
+            )
+
     exp_overlap = set(exp_dfs[0].index) & set(exp_dfs[1].index)
     exp_dfs = [exp_dfs[0].drop(exp_overlap), exp_dfs[1].drop(exp_overlap)]
 
@@ -262,13 +300,29 @@ def run_balanced_contrast(
         The function performs computations and saves the results as NIfTI files in the
         specified `project_path` directory.
     """
-
     meta_names, exp_dfs = setup_contrast_data(analysis_df, row_idx, exp_all_df, tasks)
     target_n = determine_target_n(analysis_df.iloc[row_idx, 0], exp_dfs)
 
-    check_and_run_main_effect(
-        meta_names, exp_dfs, project_path, params, tasks, target_n
-    )
+    # Check if subsampling ALE were already run; if not - run them
+    for idx, meta_name in enumerate(meta_names):
+        result_path = (
+            project_path
+            / f"Results/MainEffect/CV/Volumes/{meta_name}_sub_ale_{target_n}.nii"
+        )
+        if not result_path.exists():
+            logger = logging.getLogger("ale_logger")
+            logger.info(
+                f"Running subsampling ale for {meta_name} as prerequisite for balanced contrast analysis"
+            )
+            main_effect(
+                project_path,
+                exp_dfs[idx],
+                meta_name,
+                target_n=target_n,
+                monte_carlo_iterations=params["monte_carlo_iterations"],
+                sample_n=params["subsample_n"],
+                nprocesses=params["nprocesses"],
+            )
 
     balanced_contrast(
         project_path,
@@ -343,49 +397,6 @@ def determine_target_n(row_value, exp_dfs):
     return int(min(np.floor(np.mean((np.min(n), 17))), np.min(n) - 2))
 
 
-def check_and_run_main_effect(
-    meta_names, exp_dfs, project_path, params, tasks, target_n=None
-):
-    """
-    Check for existing main effect results and run analysis if not found.
-
-    Parameters
-    ----------
-    meta_names : list of str
-        List of meta-analysis names for which to check and run main effect analysis.
-    exp_dfs : list of pandas.DataFrame
-        List of DataFrames containing experiment data for each meta-analysis.
-    project_path : str or Path
-        Path to the project directory.
-    params : dict
-        Dictionary of parameters for analysis, including TFCE and cutoff prediction settings.
-    tasks : pandas.DataFrame
-        DataFrame containing task information.
-    target_n : int, optional
-        Target number of subsamples for probabilistic ALE, by default None.
-    """
-    for idx, meta_name in enumerate(meta_names):
-        result_path = (
-            project_path / f"Results/MainEffect/Full/Volumes/{meta_name}_cFWE05.nii"
-        )
-        if not result_path.exists():
-            main_effect(
-                project_path,
-                exp_dfs[idx],
-                meta_name,
-                tfce_enabled=params["tfce_enabled"],
-                cutoff_predict_enabled=params["cutoff_predict_enabled"],
-                bin_steps=params["bin_steps"],
-                cluster_forming_threshold=params["cluster_forming_threshold"],
-                monte_carlo_iterations=params["monte_carlo_iterations"],
-                nprocesses=params["nprocesses"],
-                target_n=target_n,
-            )
-            contribution(
-                project_path, exp_dfs[idx], meta_name, tasks, params["tfce_enabled"]
-            )
-
-
 def run_ma_clustering(analysis_df, row_idx, project_path, params, exp_all_df, tasks):
     logger = logging.getLogger("ale_logger")
     logger.info("Running MA Clustering")
@@ -399,6 +410,16 @@ def run_ma_clustering(analysis_df, row_idx, project_path, params, exp_all_df, ta
         f"{meta_name} : {len(exp_idxs)} experiments; average of {exp_df.Subjects.mean():.2f} subjects per experiment"
     )
 
+    clustering(
+        project_path,
+        exp_df,
+        meta_name,
+        max_clusters=params["max_clusters"],
+        subsample_fraction=params["subsample_fraction"],
+        sampling_iterations=params["sampling_iterations"],
+        null_iterations=params["null_iterations"],
+    )
+
 
 def run_ale(yaml_path=None):
     # Load config and set up paths
@@ -410,6 +431,7 @@ def run_ale(yaml_path=None):
     logger.info("Logger initialized and project setup complete.")
 
     params = config.get("parameters", {})
+    clustering_params = config.get("clustering_params", {})
     exp_all_df, tasks, analysis_df = load_dataframes(project_path, config)
 
     # Main loop to process each row in the analysis dataframe
@@ -436,5 +458,7 @@ def run_ale(yaml_path=None):
             )
         elif analysis_df.iloc[row_idx, 0] == "Cluster":
             run_ma_clustering(
-                analysis_df, row_idx, project_path, params, exp_all_df, tasks
+                analysis_df, row_idx, project_path, clustering_params, exp_all_df, tasks
             )
+
+    logger.info("Analysis completed.")

@@ -385,10 +385,10 @@ def read_experiment_info(filename):
     ]
 
     # Save processed experiment data to an Excel file
-    exp_info.to_excel("experiment_info_concat.xlsx", index=False)
+    # exp_info.to_excel("experiment_info_concat.xlsx", index=False)
 
     # Create a tasks table summarizing task-related information and save it
     tasks = create_tasks_table(exp_info)
-    tasks.to_excel("tasks_info.xlsx", index=False)
+    # tasks.to_excel("tasks_info.xlsx", index=False)
 
     return exp_info, tasks

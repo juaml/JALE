@@ -35,7 +35,35 @@ def plot_clustering_metrics(
     calinski_harabasz_scores_z,
     adjusted_rand_scores_z,
 ):
-    pass
+    plt.figure(figsize=(12, 8))
+
+    # Plot Silhouette Scores
+    plt.subplot(3, 1, 1)
+    plt.plot(silhouette_scores_z, marker="o")
+    plt.title("Silhouette Scores Z")
+    plt.xlabel("Number of Clusters")
+    plt.ylabel("Z-Score")
+    plt.grid()
+
+    # Plot Calinski-Harabasz Scores
+    plt.subplot(3, 1, 2)
+    plt.plot(calinski_harabasz_scores_z, marker="o")
+    plt.title("Calinski-Harabasz Scores Z")
+    plt.xlabel("Number of Clusters")
+    plt.ylabel("Z-Score")
+    plt.grid()
+
+    # Plot Adjusted Rand Scores
+    plt.subplot(3, 1, 3)
+    plt.plot(adjusted_rand_scores_z, marker="o")
+    plt.title("Adjusted Rand Scores Z")
+    plt.xlabel("Number of Clusters")
+    plt.ylabel("Z-Score")
+    plt.grid()
+
+    plt.tight_layout()
+    plt.savefig(project_path / "Results/MA_Clustering/clustering_metrics.png")
+    plt.show()
 
 
 def compute_clustering(
@@ -243,6 +271,8 @@ def clustering(
     ma_gm_masked = ma[:, GM_PRIOR]
 
     correlation_matrix, _ = spearmanr(ma_gm_masked, axis=1)
+    plot_cor_matrix(project_path, correlation_matrix)
+
     silhouette_scores, calinski_harabasz_scores, adjusted_rand_scores = (
         compute_clustering(
             meta_name,
@@ -260,4 +290,20 @@ def clustering(
             max_clusters=max_clusters,
             null_iterations=500,
         )
+    )
+
+    silhouette_z, alinski_harabasz_z, adjusted_rand_z = compute_metrics_z(
+        silhouette_scores,
+        calinski_harabasz_scores,
+        adjusted_rand_scores,
+        null_silhouette_scores,
+        null_calinski_harabasz_scores,
+        null_adjusted_rand_scores,
+    )
+
+    plot_clustering_metrics(
+        project_path,
+        silhouette_scores_z=silhouette_z,
+        calinski_harabasz_scores_z=alinski_harabasz_z,
+        adjusted_rand_scores_z=adjusted_rand_z,
     )
