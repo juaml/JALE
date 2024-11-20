@@ -32,7 +32,7 @@ JALE requires a project folder that contains 3 files:
 2. Analysis Data (Type of ALE, Tags to be included)
 3. Yaml config file (specifying project folder path, filenames and ALE parameters)
 
-For example files please check the docs folder.
+For example files please check the wiki.
 
 Running an ALE can be done in two ways:
 
