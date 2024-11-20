@@ -2,15 +2,14 @@
 Module for loading and storing key constants for the MNI template and grey matter mask.
 """
 
-from importlib import resources
+from importlib.resources import files
 
 import nibabel as nb
 import numpy as np
 
 # Define the path to the template file
-
-with resources.path("jale.assets.mask", "Grey10.nii") as mask_file_path:
-    template = nb.loadsave.load(mask_file_path)
+mask_file_path = files("jale.assets.mask") / "Grey10.nii"
+template = nb.loadsave.load(mask_file_path)
 
 # Extract template data
 data = template.get_fdata()
