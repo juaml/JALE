@@ -1,7 +1,6 @@
 # JALE
 
-![Coverage](https://codecov.io/gh/LenFrahm/JALE/branch/main/graph/badge.svg)
-![Python Versions](https://img.shields.io/pypi/pyversions/jale.svg)
+![Python Versions](https://img.shields.io/badge/python-%3E%3D3.8-blue)
 ![Ruff](https://img.shields.io/badge/code%20style-Ruff-blueviolet)
 ![PyPI Version](https://img.shields.io/pypi/v/jale.svg)
 ![License](https://img.shields.io/github/license/LenFrahm/JALE.svg)
