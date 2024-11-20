@@ -1,9 +1,8 @@
 # JALE
 
-
-![Build Status](https://github.com/LenFrahm/JALE/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://codecov.io/gh/LenFrahm/JALE/branch/main/graph/badge.svg)
 ![Python Versions](https://img.shields.io/pypi/pyversions/jale.svg)
+![Ruff](https://img.shields.io/badge/code%20style-Ruff-blueviolet)
 ![PyPI Version](https://img.shields.io/pypi/v/jale.svg)
 ![License](https://img.shields.io/github/license/LenFrahm/JALE.svg)
 
