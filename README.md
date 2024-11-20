@@ -5,7 +5,7 @@
 ![Coverage](https://codecov.io/gh/LenFrahm/JALE/branch/main/graph/badge.svg)
 ![Python Versions](https://img.shields.io/pypi/pyversions/jale.svg)
 ![PyPI Version](https://img.shields.io/pypi/v/jale.svg)
-![License](https://img.shields.io/github/license/lfrahm/my_project.svg)
+![License](https://img.shields.io/github/license/LenFrahm/JALE.svg)
 
 A Python package for conducting ALE (Activation Likelihood Estimation) meta-analyses, supporting a range of analysis workflows: standard ALE, probabilistic or cross-validated ALE, standard ALE contrast, and balanced ALE contrast.
 
