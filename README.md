@@ -23,6 +23,8 @@ pip install jale
 ```
 ## Usage
 
+Please check the wiki for more detailed instructions. [Visit the Wiki](https://github.com/LenFrahm/JALE/wiki)
+
 Here’s how to use the project:
 
 JALE requires a project folder that contains 3 files:
