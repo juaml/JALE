@@ -1,14 +1,19 @@
 # JALE
 
+![Python Versions](https://img.shields.io/badge/python-%3E%3D3.8-blue)
+![Ruff](https://img.shields.io/badge/code%20style-Ruff-blueviolet)
+![PyPI Version](https://img.shields.io/pypi/v/jale.svg)
+![License](https://img.shields.io/github/license/LenFrahm/JALE.svg)
+
 A Python package for conducting ALE (Activation Likelihood Estimation) meta-analyses, supporting a range of analysis workflows: standard ALE, probabilistic or cross-validated ALE, standard ALE contrast, and balanced ALE contrast.
+
+For information regarding installation, usage and features please visit the [Github Wiki](https://github.com/LenFrahm/JALE/wiki).
 
 ## Table of Contents
 - [Installation](#installation)
 - [Usage](#usage)
 - [Features](#features)
-- [Examples](#examples)
 - [Background and References](#background-and-references)
-- [Contributing](#contributing)
 - [License](#license)
 
 ## Installation
@@ -47,10 +52,10 @@ main(yaml_path='/path/to/yaml/file')
 
 ## Features
 
-- Standard ("Main Effect") ALE: Brief description
-- Probabilistic ("Cross-Validated") ALE: Brief description
-- Standard ALE Contrast: Brief description
-- Balanced ALE Contrast: Brief description
+- Standard ("Main Effect") ALE
+- Probabilistic ("Cross-Validated") ALE
+- Standard ALE Contrast
+- Balanced ALE Contrast
 
 ## Background and References
 
