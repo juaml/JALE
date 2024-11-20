@@ -11,9 +11,7 @@ A Python package for conducting ALE (Activation Likelihood Estimation) meta-anal
 - [Installation](#installation)
 - [Usage](#usage)
 - [Features](#features)
-- [Examples](#examples)
 - [Background and References](#background-and-references)
-- [Contributing](#contributing)
 - [License](#license)
 
 ## Installation
