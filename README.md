@@ -7,6 +7,8 @@
 
 A Python package for conducting ALE (Activation Likelihood Estimation) meta-analyses, supporting a range of analysis workflows: standard ALE, probabilistic or cross-validated ALE, standard ALE contrast, and balanced ALE contrast.
 
+For information regarding installation, usage and features please visit the [Github Wiki](https://github.com/LenFrahm/JALE/wiki).
+
 ## Table of Contents
 - [Installation](#installation)
 - [Usage](#usage)
@@ -22,8 +24,6 @@ To install the ALE Meta-Analysis Package, run:
 pip install jale
 ```
 ## Usage
-
-Please check the wiki for more detailed instructions. [Visit the Wiki](https://github.com/LenFrahm/JALE/wiki)
 
 Here’s how to use the project:
 
