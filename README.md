@@ -47,10 +47,10 @@ main(yaml_path='/path/to/yaml/file')
 
 ## Features
 
-- Standard ("Main Effect") ALE: Brief description
-- Probabilistic ("Cross-Validated") ALE: Brief description
-- Standard ALE Contrast: Brief description
-- Balanced ALE Contrast: Brief description
+- Standard ("Main Effect") ALE
+- Probabilistic ("Cross-Validated") ALE
+- Standard ALE Contrast
+- Balanced ALE Contrast
 
 ## Background and References
 
