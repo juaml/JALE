@@ -1,10 +1,6 @@
 import logging
-import sys
-from datetime import datetime
-from pathlib import Path
 
 import numpy as np
-import yaml
 
 from jale.core.analyses.clustering import clustering
 from jale.core.analyses.contrast import balanced_contrast, contrast
@@ -12,69 +8,9 @@ from jale.core.analyses.main_effect import main_effect, probabilistic_ale
 from jale.core.analyses.roi import roi_ale
 from jale.core.utils.compile_experiments import compile_experiments
 from jale.core.utils.contribution import contribution
-from jale.core.utils.folder_setup import folder_setup
-from jale.core.utils.input import load_excel, read_experiment_info
-
-
-def load_config(yaml_path):
-    """Load configuration from YAML file."""
-    try:
-        with open(yaml_path, "r") as file:
-            return yaml.safe_load(file)
-    except FileNotFoundError:
-        print(f"YAML file not found at path: {yaml_path}")
-        sys.exit(1)
-    except yaml.YAMLError as e:
-        print(f"Error loading YAML file: {e}")
-        sys.exit(1)
-
-
-def setup_project_folder(config):
-    """Set up project paths and folders based on configuration."""
-    project_path = Path(config["project"]["path"]).resolve()
-    folder_setup(project_path)
-    return project_path
-
-
-def setup_logger(project_path: Path):
-    """Initialize logging with a file handler in the project directory."""
-    logger = logging.getLogger("ale_logger")
-
-    # Prevent adding handlers multiple times
-    if not logger.hasHandlers():
-        logger.setLevel(logging.DEBUG)
-
-        # Console handler
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-        console_format = logging.Formatter("%(levelname)s - %(message)s")
-        console_handler.setFormatter(console_format)
-
-        # File handler in the project directory
-        start_time = datetime.now().strftime("%Y%m%d_%H%M")
-        file_handler = logging.FileHandler(project_path / f"logs/{start_time}.log")
-        file_handler.setLevel(logging.DEBUG)
-        file_format = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        file_handler.setFormatter(file_format)
-
-        # Add handlers to the logger
-        logger.addHandler(console_handler)
-        logger.addHandler(file_handler)
-
-    return logger
-
-
-def load_dataframes(project_path, config):
-    """Load experiment info and analysis dataframes."""
-    exp_all_df, tasks = read_experiment_info(
-        project_path / config["project"]["experiment_info"]
-    )
-    analysis_df = load_excel(
-        project_path / config["project"]["analysis_info"], type="analysis"
-    )
-    return exp_all_df, tasks, analysis_df
+from jale.core.utils.folder_setup import setup_project_folder
+from jale.core.utils.input import load_config, load_dataframes
+from jale.core.utils.logger import setup_logger
 
 
 def run_main_effect(analysis_df, row_idx, project_path, params, exp_all_df, tasks):

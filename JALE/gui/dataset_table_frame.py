@@ -57,7 +57,7 @@ class DatasetTableFrame(customtkinter.CTkFrame):
     def set_controller(self, controller):
         self.controller = controller
 
-    def fill_table(self, dataset_df):
+    def fill_dataset_table(self, dataset_df):
         # Clear all existing entries in the Treeview
         for item in self.tree.get_children():
             self.tree.delete(item)

@@ -89,7 +89,7 @@ def contrast(
             ale_difference1 = ale1 - ale2
             # estimate null distribution of difference values if studies
             # would be randomly assigned to either meta analysis
-            null_difference1 = Parallel(n_jobs=nprocesses)(
+            null_difference1 = Parallel(n_jobs=nprocesses, verbose=2)(
                 delayed(compute_permuted_ale_diff)(stacked_masked_ma, n_meta_group1)
                 for i in range(null_repeats)
             )
@@ -113,7 +113,7 @@ def contrast(
                 (ma1[:, significance_mask2], ma2[:, significance_mask2])
             )
             ale_difference2 = ale2 - ale1
-            null_difference2 = Parallel(n_jobs=nprocesses)(
+            null_difference2 = Parallel(n_jobs=nprocesses, verbose=2)(
                 delayed(compute_permuted_ale_diff)(stacked_masked_ma, n_meta_group2)
                 for i in range(null_repeats)
             )

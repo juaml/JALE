@@ -1,3 +1,13 @@
+from pathlib import Path
+
+
+def setup_project_folder(config):
+    """Set up project paths and folders based on configuration."""
+    project_path = Path(config["project"]["path"]).resolve()
+    folder_setup(project_path)
+    return project_path
+
+
 def folder_setup(path):
     """
     Set up a directory structure for storing analysis results.

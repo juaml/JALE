@@ -67,7 +67,7 @@ class AnalysisTableFrame(customtkinter.CTkFrame):
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-    def fill_table(self, analysis_df):
+    def fill_analysis_table(self, analysis_df):
         self.reset_table()
         # Insert new rows into the Treeview
         for row in analysis_df.itertuples(index=False):

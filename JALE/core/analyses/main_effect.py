@@ -190,7 +190,7 @@ def main_effect(
         else:
             logger.info(f"{meta_name} - simulating null")
             vfwe_null, cfwe_null, tfce_null = zip(
-                *Parallel(n_jobs=nprocesses)(
+                *Parallel(n_jobs=nprocesses, verbose=2)(
                     delayed(compute_monte_carlo_null)(
                         num_foci=exp_df.NumberOfFoci,
                         kernels=kernels,
@@ -311,7 +311,7 @@ def probabilistic_ale(
     else:
         logger.info(f"{meta_name} - computing cv cluster cut-off.")
         _, cfwe_null, _ = zip(
-            *Parallel(n_jobs=nprocesses)(
+            *Parallel(n_jobs=nprocesses, verbose=2)(
                 delayed(compute_monte_carlo_null)(
                     num_foci=exp_df.NumberOfFoci,
                     kernels=kernels,

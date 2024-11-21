@@ -3,7 +3,7 @@ import customtkinter
 from jale.gui.analysis_table_frame import AnalysisTableFrame
 from jale.gui.controller import Controller
 from jale.gui.dataset_table_frame import DatasetTableFrame
-from jale.gui.output_frame import OutputFrame
+from jale.gui.output_log_frame import OutputLogFrame
 from jale.gui.sidebar_frame import Sidebar_Frame
 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
@@ -35,9 +35,9 @@ class App(customtkinter.CTk):
             row=2, column=1, padx=10, pady=(0, 10), sticky="nsew"
         )
 
-        self.output_log_frame = OutputFrame(self)
+        self.output_log_frame = OutputLogFrame(self, "Output Log")
         self.output_log_frame.grid(
-            row=0, rowspan=2, column=2, padx=(0, 10), pady=(10, 10), sticky="nsew"
+            row=0, rowspan=4, column=2, padx=(0, 10), pady=(10, 10), sticky="nsew"
         )
 
         self.controller = Controller(
