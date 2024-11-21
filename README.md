@@ -45,9 +45,9 @@ python -m jale /path/to/yaml/file
 2. in Python:
 
 ```python
-from jale import main
+from jale.ale import run_ale
 
-main(yaml_path='/path/to/yaml/file')
+run_ale(yaml_path='/path/to/yaml/file')
 ```
 
 ## Features
