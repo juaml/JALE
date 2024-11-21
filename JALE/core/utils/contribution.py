@@ -286,7 +286,7 @@ def write_task_contributions(txt, tasks, exp_idxs, contribution_arr):
     contribution_arr : numpy.ndarray
         Array of contribution values for each experiment.
     """
-
+    txt.write("\nTask Contributions:\n")
     for i, task_name in enumerate(tasks.Name):
         mask = [s in tasks.ExpIndex[i] for s in exp_idxs]
         if any(mask):  # Only include tasks with contributions

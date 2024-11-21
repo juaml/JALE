@@ -1,1 +1,2 @@
-recursive-include jale/assets/*
+include jale/assets/*
+recursive-include jale/assets *
