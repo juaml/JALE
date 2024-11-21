@@ -32,7 +32,9 @@ JALE requires a project folder that contains 3 files:
 2. Analysis Data (Type of ALE, Tags to be included)
 3. Yaml config file (specifying project folder path, filenames and ALE parameters)
 
-For example files please check the wiki.
+The format of these files is very important and you should check the wiki for instructions.
+
+For example files click [here](https://raw.githubusercontent.com/LenFrahm/JALE/master/JALE/assets/examples.zip).
 
 Running an ALE can be done in two ways:
 
@@ -45,9 +47,9 @@ python -m jale /path/to/yaml/file
 2. in Python:
 
 ```python
-from jale import main
+from jale.ale import run_ale
 
-main(yaml_path='/path/to/yaml/file')
+run_ale(yaml_path='/path/to/yaml/file')
 ```
 
 ## Features
