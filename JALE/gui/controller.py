@@ -34,10 +34,10 @@ class Controller:
 
     def import_analysis_file(self, filename):
         self.analysis_df = load_excel(filename, type="analysis")
-        self.analysis_df = self.analysis_table_frame.format_imported_analysis_file(
-            self.analysis_df
+        self.analysis_df_formatted = (
+            self.analysis_table_frame.format_imported_analysis_file(self.analysis_df)
         )
-        self.analysis_table_frame.fill_table(self.analysis_df)
+        self.analysis_table_frame.fill_table(self.analysis_df_formatted)
 
     def get_analysis_parameters(self, analysis_parameters):
         if "group2_logic" not in analysis_parameters:
