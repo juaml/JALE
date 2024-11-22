@@ -1,5 +1,6 @@
 import logging
 from multiprocessing import Process
+from threading import Thread
 
 import customtkinter
 
@@ -60,83 +61,92 @@ class Controller:
 
     def run_analysis(self):
         logger = logging.getLogger("ale_logger")
-        # Main loop to process each row in the analysis dataframe
-        for row_idx in range(self.analysis_df.shape[0]):
-            # skip empty rows - indicate 2nd effect for contrast analysis
-            if not isinstance(self.analysis_df.iloc[row_idx, 0], str):
-                continue
 
-            if self.analysis_df.iloc[row_idx, 0] == "M":
-                process = Process(
-                    target=run_main_effect,
-                    args=(
-                        self.analysis_df,
-                        row_idx,
-                        self.project_path,
-                        self.params,
-                        self.dataset_df,
-                        self.task_df,
-                    ),
-                )
-                process.start()
+        def process_analyses():
+            """
+            Run analyses sequentially in threads.
+            """
+            for row_idx in range(self.analysis_df.shape[0]):
+                # Skip empty rows
+                if not isinstance(self.analysis_df.iloc[row_idx, 0], str):
+                    continue
 
-            elif self.analysis_df.iloc[row_idx, 0][0] == "P":
-                process = Process(
-                    target=run_probabilistic_ale,
-                    args=(
-                        self.analysis_df,
-                        row_idx,
-                        self.project_path,
-                        self.params,
-                        self.dataset_df,
-                        self.task_df,
-                    ),
-                )
-                process.start()
+                thread = None
 
-            elif self.analysis_df.iloc[row_idx, 0] == "C":
-                process = Process(
-                    target=run_contrast_analysis,
-                    args=(
-                        self.analysis_df,
-                        row_idx,
-                        self.project_path,
-                        self.params,
-                        self.dataset_df,
-                        self.task_df,
-                    ),
-                )
-                process.start()
+                if self.analysis_df.iloc[row_idx, 0] == "M":
+                    thread = Thread(
+                        target=run_main_effect,
+                        args=(
+                            self.analysis_df,
+                            row_idx,
+                            self.project_path,
+                            self.params,
+                            self.dataset_df,
+                            self.task_df,
+                        ),
+                    )
 
-            elif self.analysis_df.iloc[row_idx, 0][0] == "B":
-                process = Process(
-                    target=run_balanced_contrast,
-                    args=(
-                        self.analysis_df,
-                        row_idx,
-                        self.project_path,
-                        self.params,
-                        self.dataset_df,
-                        self.task_df,
-                    ),
-                )
-                process.start()
+                elif self.analysis_df.iloc[row_idx, 0][0] == "P":
+                    thread = Thread(
+                        target=run_probabilistic_ale,
+                        args=(
+                            self.analysis_df,
+                            row_idx,
+                            self.project_path,
+                            self.params,
+                            self.dataset_df,
+                            self.task_df,
+                        ),
+                    )
 
-            elif self.analysis_df.iloc[row_idx, 0] == "Cluster":
-                process = Process(
-                    target=run_ma_clustering,
-                    args=(
-                        self.analysis_df,
-                        row_idx,
-                        self.project_path,
-                        self.clustering_params,
-                        self.dataset_df,
-                        self.task_df,
-                    ),
-                )
-                process.start()
+                elif self.analysis_df.iloc[row_idx, 0] == "C":
+                    thread = Thread(
+                        target=run_contrast_analysis,
+                        args=(
+                            self.analysis_df,
+                            row_idx,
+                            self.project_path,
+                            self.params,
+                            self.dataset_df,
+                            self.task_df,
+                        ),
+                    )
 
-        logger.info("Analysis completed.")
+                elif self.analysis_df.iloc[row_idx, 0][0] == "B":
+                    thread = Thread(
+                        target=run_balanced_contrast,
+                        args=(
+                            self.analysis_df,
+                            row_idx,
+                            self.project_path,
+                            self.params,
+                            self.dataset_df,
+                            self.task_df,
+                        ),
+                    )
+
+                elif self.analysis_df.iloc[row_idx, 0] == "Cluster":
+                    thread = Thread(
+                        target=run_ma_clustering,
+                        args=(
+                            self.analysis_df,
+                            row_idx,
+                            self.project_path,
+                            self.clustering_params,
+                            self.dataset_df,
+                            self.task_df,
+                        ),
+                    )
+
+                if thread:
+                    thread.start()
+                    thread.join()  # Wait for the current thread to finish
+
+            logger.info("Analysis completed.")
+
+        # Run analyses in a background thread to keep the GUI responsive
+        background_thread = Thread(target=process_analyses)
+        background_thread.start()
 
     def stop_analysis(self):
         return

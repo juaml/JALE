@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from core.utils.input import (
+from jale.core.utils.input import (
     check_coordinates_are_numbers,
     concat_coordinates,
     concat_tags,
