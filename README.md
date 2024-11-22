@@ -1,6 +1,6 @@
 # JALE
 
-![Python Versions](https://img.shields.io/badge/python-%3E%3D3.8-blue)
+![Python Versions](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue)
 ![Ruff](https://img.shields.io/badge/code%20style-Ruff-blueviolet)
 ![PyPI Version](https://img.shields.io/pypi/v/jale.svg)
 ![License](https://img.shields.io/github/license/LenFrahm/JALE.svg)
