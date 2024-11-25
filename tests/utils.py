@@ -1,5 +1,7 @@
 """Utility functions for testing pyALE."""
+
 import os.path as op
+
 
 def get_test_data_path():
     """Return the path to test datasets, terminated with separator.

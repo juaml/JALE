@@ -10,9 +10,9 @@ def compile_experiments(conditions, tasks):
     ----------
     conditions : list of str
         Conditions for experiment selection:
-        - `+tag`: Include experiments that have tag. Logical AND
-        - `-tag`: Exclude experiments that have tag. Logical NOT
-        - `?`: Intersect included experiments. Logical OR
+        - `+tag`: Include experiments that have tag. Logical AND.
+        - `-tag`: Exclude experiments that have tag. Logical NOT.
+        - `?`: Combine included experiments (Logical OR).
         - `$file`: Load mask from file.
 
     tasks : pandas.DataFrame
@@ -29,49 +29,66 @@ def compile_experiments(conditions, tasks):
     mask_names : list of str
         List of mask file names without extensions.
     """
-    included_experiments = set()
-    excluded_experiments = set()
+    exp_to_use = []
+    not_to_use = []
     masks = []
     mask_names = []
 
     for condition in conditions:
         operation = condition[0]
-        tag = condition[1:].lower()
-
-        # Check if the experiment exists in tasks and handle exceptions
-        try:
-            experiment_index = tasks[tasks.Name == tag].ExpIndex.values[0]
-        except IndexError:
-            raise ValueError(f"Experiment '{tag}' not found in tasks.")
+        argument = condition[1:]
 
         if operation == "+":
-            included_experiments.update(experiment_index)
+            # Logical AND
+            tag = argument.lower()
+            matches = tasks[tasks["Name"].str.lower() == tag]["ExpIndex"].values
+            if not matches:
+                raise ValueError(f"No experiments found for tag: {tag}")
+            exp_to_use.append(matches[0])
 
         elif operation == "-":
-            excluded_experiments.update(experiment_index)
+            # Logical NOT
+            tag = argument.lower()
+            matches = tasks[tasks["Name"].str.lower() == tag]["ExpIndex"].values
+            if not matches:
+                raise ValueError(f"No experiments found for tag: {tag}")
+            not_to_use.append(matches[0])
 
         elif operation == "?":
-            # Intersect experiments in included_experiments
-            included_experiments = set(
-                included_experiments
-            )  # Ensure unique entries only
+            # Logical OR: Combine all included experiments
+            flat_list = [idx for sublist in exp_to_use for idx in sublist]
+            exp_to_use = [list(set(flat_list[0]))]
 
         elif operation == "$":
-            mask_file = condition[1:]
-            mask = nb.loadsave.load(mask_file).get_fdata()
+            # Load mask from file
+            try:
+                mask = nb.load(argument).get_fdata()
+            except FileNotFoundError:
+                raise FileNotFoundError(f"Mask file not found: {argument}")
+            except Exception as e:
+                raise ValueError(f"Error loading mask file {argument}: {e}")
 
-            if np.unique(mask).shape[0] == 2:
-                # Binary mask
+            # Check binary or multi-class mask
+            if np.unique(mask).size == 2:
                 masks.append(mask.astype(bool))
             else:
-                # Labeled mask
                 masks.append(mask.astype(int))
-            mask_names.append(mask_file[:-4])
 
-    # Apply difference between included and excluded experiments
-    included_experiments = included_experiments.difference(excluded_experiments)
+            mask_names.append(argument.rsplit(".", 1)[0])
 
-    # Convert back to list for final result
-    included_experiments = list(included_experiments)
+    # Compute final set of experiments to use
+    if exp_to_use:
+        use_sets = map(set, exp_to_use)
+        exp_to_use = list(set.intersection(*use_sets))
+        if len(exp_to_use) == 0:
+            raise ValueError("Bad tag combination. No experiments found.")
+    else:
+        raise ValueError("Bad tag combination. No experiments found.")
 
-    return included_experiments, masks, mask_names
+    # Remove excluded experiments
+    if not_to_use:
+        not_use_sets = map(set, not_to_use)
+        not_to_use = list(set.union(*not_use_sets))
+        exp_to_use = list(set(exp_to_use) - set(not_to_use))
+
+    return exp_to_use, masks, mask_names

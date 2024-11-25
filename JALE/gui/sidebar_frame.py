@@ -1,8 +1,5 @@
 import customtkinter
 
-from jale.gui.add_analysis_window import AddAnalysisWindow
-from jale.gui.parameter_window import ParameterWarningWindow, ParameterWindow
-
 
 class Sidebar_Frame(customtkinter.CTkFrame):
     def __init__(self, master, corner_radius: int = 0):
@@ -11,41 +8,12 @@ class Sidebar_Frame(customtkinter.CTkFrame):
         self.parameter_window = None
         self.parameter_warning_window = None
 
-        self.import_dataset_button = customtkinter.CTkButton(
+        self.select_config_file_button = customtkinter.CTkButton(
             master=self,
-            text="Import Dataset",
-            command=self.import_dataset_file_button_event,
+            text="Select ALE Config",
+            command=self.select_config_file_button_event,
         )
-        self.import_dataset_button.grid(row=0, column=0, padx=20, pady=(20, 20))
-
-        self.add_analysis_button = customtkinter.CTkButton(
-            master=self,
-            text="Add Analysis",
-            command=self.add_analysis_button_event,
-            state="disabled",
-        )
-        self.add_analysis_button.grid(row=1, column=0, padx=20, pady=(20, 5))
-
-        self.save_analysis_button = customtkinter.CTkButton(
-            master=self,
-            text="Save Analysis",
-            command=self.save_analysis_button_event,
-            state="disabled",
-        )
-        self.save_analysis_button.grid(row=2, column=0, padx=20, pady=(5, 5))
-
-        self.reset_table_button = customtkinter.CTkButton(
-            self,
-            text="Reset Analysis",
-            command=self.reset_table_button_event,
-            state="disabled",
-        )
-        self.reset_table_button.grid(row=3, column=0, padx=20, pady=(5, 5))
-
-        self.ale_parameters_button = customtkinter.CTkButton(
-            master=self, text="ALE Parameters", command=self.ale_parameters_button_event
-        )
-        self.ale_parameters_button.grid(row=4, column=0, padx=20, pady=10)
+        self.select_config_file_button.grid(row=0, column=0, padx=20, pady=(20, 20))
 
         self.run_analysis_button = customtkinter.CTkButton(
             master=self,
@@ -92,44 +60,9 @@ class Sidebar_Frame(customtkinter.CTkFrame):
     def set_controller(self, controller):
         self.controller = controller
 
-    def import_dataset_file_button_event(self):
-        filename = customtkinter.filedialog.askopenfilename()
-        if filename:
-            self.controller.load_dataset_file(filename)
-            self.add_analysis_button.configure(state="normal")
-            self.save_analysis_button.configure(state="normal")
-            self.reset_table_button.configure(state="normal")
-
-    def add_analysis_button_event(self):
-        if (
-            self.add_analysis_window is None
-            or not self.add_analysis_window.winfo_exists()
-        ):
-            self.add_analysis_window = AddAnalysisWindow(self, self.controller)
-        else:
-            self.add_analysis_window.focus()
-
-    def save_analysis_button_event(self):
-        pass
-
-    def reset_table_button_event(self):
-        self.controller.analysis_df = None
-        self.controller.reset_analysis_table()
-
-    def ale_parameters_button_event(self):
-        if self.parameter_window is None or not self.parameter_window.winfo_exists():
-            if (
-                self.parameter_warning_window is None
-                or not self.parameter_warning_window.winfo_exists()
-            ):
-                self.parameter_warning_window = ParameterWarningWindow(
-                    self, self.controller
-                )
-        else:
-            self.parameter_warning_window.focus()
-
-    def open_parameter_window(self):
-        self.parameter_window = ParameterWindow(self, self.controller)
+    def select_config_file_button_event(self):
+        self.controller.config_to_gui()
+        return
 
     def run_analysis_button_event(self):
         self.controller.run_analysis()

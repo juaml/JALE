@@ -2,9 +2,23 @@ import sys
 
 import numpy as np
 import pandas as pd
+import yaml
 
 from jale.core.utils.tal2icbm_spm import tal2icbm_spm
 from jale.core.utils.template import MNI_AFFINE
+
+
+def load_config(yaml_path):
+    """Load configuration from YAML file."""
+    try:
+        with open(yaml_path, "r") as file:
+            return yaml.safe_load(file)
+    except FileNotFoundError:
+        print(f"YAML file not found at path: {yaml_path}")
+        sys.exit(1)
+    except yaml.YAMLError as e:
+        print(f"Error loading YAML file: {e}")
+        sys.exit(1)
 
 
 def load_excel(filepath, type="analysis"):
@@ -392,3 +406,14 @@ def read_experiment_info(filename):
     # tasks.to_excel("tasks_info.xlsx", index=False)
 
     return exp_info, tasks
+
+
+def load_dataframes(project_path, config):
+    """Load experiment info and analysis dataframes."""
+    exp_all_df, tasks = read_experiment_info(
+        project_path / config["project"]["experiment_info"]
+    )
+    analysis_df = load_excel(
+        project_path / config["project"]["analysis_info"], type="analysis"
+    )
+    return exp_all_df, tasks, analysis_df

@@ -1,6 +1,20 @@
+import logging
 import tkinter
 
 import customtkinter
+
+
+class TextWidgetHandler(logging.Handler):
+    def __init__(self, text_widget):
+        super().__init__()
+        self.text_widget = text_widget
+
+    def emit(self, record):
+        """
+        Emit a log record to the text widget.
+        """
+        log_entry = self.format(record)
+        self.text_widget.update_log(log_entry)
 
 
 class OutputLogFrame(customtkinter.CTkFrame):
@@ -35,6 +49,7 @@ class OutputLogFrame(customtkinter.CTkFrame):
             spacing1=4,  # spacing before a line
             spacing3=4,  # spacing after a line / wrapped line
             cursor="arrow",
+            font=("Courier", 14),
         )
         self.txt_log.grid(row=1, column=0, padx=(15, 0), pady=(0, 15), sticky="nsew")
         self.txt_log.configure(state=tkinter.DISABLED)
@@ -73,3 +88,14 @@ class OutputLogFrame(customtkinter.CTkFrame):
         self.txt_log.delete(1.0, tkinter.END)
         self.txt_log.configure(state=tkinter.DISABLED)
         self.txt_log.see(tkinter.END)
+
+    def set_logger(self, logger):
+        """
+        Attaches the logger to this frame's text widget.
+        """
+        self.logger = logger
+        handler = TextWidgetHandler(self)
+        handler.setFormatter(logging.Formatter("%(levelname)s - %(message)s"))
+        if len(logger.handlers) < 3:
+            self.logger.addHandler(handler)
+            self.logger.setLevel(logging.DEBUG)  # Set the desired log level

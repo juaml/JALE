@@ -24,6 +24,7 @@ setup(
         "scikit-learn-extra>=0.3.0",
         "matplotlib>=3.7.1",
         "seaborn>=0.12.2",
+        "nilearn>=0.12.0",
     ],
     include_package_data=True,
     classifiers=[  # Classifiers help users find your project
