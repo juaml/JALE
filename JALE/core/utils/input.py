@@ -65,6 +65,16 @@ def load_excel(filepath, type="analysis"):
     # Drop any rows that are completely empty
     df.dropna(inplace=True, how="all")
 
+    # Check for rows with only one non-NaN entry
+    mistake_rows = df[(df.notna().sum(axis=1) == 1) | (df.notna().sum(axis=1) == 2)]
+    if not mistake_rows.empty:
+        row_indices = mistake_rows.index.tolist()
+        row_indices = np.array(row_indices) + 2
+        print(
+            f"Error: Rows with only one or two entries found at indices: {row_indices}"
+        )
+        sys.exit()
+
     # If type is 'experiment', rename the first columns to standard names
     if type == "experiment":
         current_column_names = df.columns.values

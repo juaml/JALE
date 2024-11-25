@@ -57,7 +57,7 @@ def compile_experiments(conditions, tasks):
         elif operation == "?":
             # Logical OR: Combine all included experiments
             flat_list = [idx for sublist in exp_to_use for idx in sublist]
-            exp_to_use = [list(set(flat_list[0]))]
+            exp_to_use = [list(set(flat_list))]
 
         elif operation == "$":
             # Load mask from file

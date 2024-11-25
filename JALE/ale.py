@@ -1,14 +1,16 @@
 import logging
+from pathlib import Path
 
 import numpy as np
 
+from jale.core.analyses.balanced_contrast import balanced_contrast
 from jale.core.analyses.clustering import clustering
-from jale.core.analyses.contrast import balanced_contrast, contrast
-from jale.core.analyses.main_effect import main_effect, probabilistic_ale
+from jale.core.analyses.contrast import contrast
+from jale.core.analyses.main_effect import main_effect
+from jale.core.analyses.probabilistic import probabilistic_ale
 from jale.core.analyses.roi import roi_ale
 from jale.core.utils.compile_experiments import compile_experiments
 from jale.core.utils.contribution import contribution
-from jale.core.utils.folder_setup import setup_project_folder
 from jale.core.utils.input import load_config, load_dataframes
 from jale.core.utils.logger import setup_logger
 
@@ -360,9 +362,10 @@ def run_ma_clustering(analysis_df, row_idx, project_path, params, exp_all_df, ta
 def run_ale(yaml_path=None):
     # Load config and set up paths
     config = load_config(yaml_path)
-    project_path = setup_project_folder(config)
-
-    # Initialize the logger after setting up the project directory
+    project_path = Path(config["project"]["path"])
+    # Create a logs folder (common across all analysis types)
+    (project_path / "logs").mkdir(parents=True, exist_ok=True)
+    # Initialize the logger
     logger = setup_logger(project_path)
     logger.info("Logger initialized and project setup complete.")
 

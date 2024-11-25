@@ -41,7 +41,7 @@ def contribution(project_path, exp_df, exp_name, tasks, tfce_enabled=True):
     for corr_method in corr_methods:
         output_path = (
             project_path
-            / f"Results/MainEffect/Full/Contribution/{exp_name}_{corr_method}.txt"
+            / f"Results/MainEffect/Contribution/{exp_name}_{corr_method}.txt"
         )
         with open(output_path, "w") as txt:
             write_header(
@@ -124,7 +124,7 @@ def load_corrected_results(project_path, exp_name, corr_method):
     """
 
     file_path = (
-        project_path / f"Results/MainEffect/Full/Volumes/{exp_name}_{corr_method}05.nii"
+        project_path / f"Results/MainEffect/Volumes/{exp_name}_{corr_method}.nii"
     )
     results = loadsave.load(file_path).get_fdata()  # type: ignore
     return np.nan_to_num(results)  # Replace NaNs with zeros for further processing

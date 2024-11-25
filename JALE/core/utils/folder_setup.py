@@ -77,6 +77,3 @@ def folder_setup(path, type_of_analysis):
     # Create the directories for the selected analysis type
     for folder in folders_to_create:
         (path / folder).mkdir(parents=True, exist_ok=True)
-
-    # Create a logs folder (common across all analysis types)
-    (path / "logs").mkdir(parents=True, exist_ok=True)

@@ -20,7 +20,7 @@ logger = logging.getLogger("ale_logger")
 def contrast(
     project_path,
     meta_names,
-    significance_threshold=0.05,
+    significance_threshold=0.0,
     null_repeats=10000,
     nprocesses=2,
 ):
@@ -40,7 +40,7 @@ def contrast(
     meta_names : list of str
         Names of the meta-analyses to compare; expects two names in the list.
     significance_threshold : float, optional
-        Significance threshold for identifying significant voxels, by default 0.05.
+        Significance threshold for identifying significant voxels, by default 0..
     null_repeats : int, optional
         Number of permutations for generating the null distribution, by default 10000.
     nprocesses : int, optional
@@ -75,7 +75,7 @@ def contrast(
     else:
         logger.info(f"{meta_names[0]} x {meta_names[1]} - Computing positive contrast.")  # noqa
         main_effect1 = nb.loadsave.load(
-            project_path / f"MainEffect/Volumes/{meta_names[0]}_cFWE05.nii"
+            project_path / f"MainEffect/Volumes/{meta_names[0]}_cFWE.nii"
         ).get_fdata()  # type: ignore
         significance_mask1 = main_effect1 > 0
         if significance_mask1.sum() > 0:
@@ -102,7 +102,7 @@ def contrast(
 
         logger.info(f"{meta_names[1]} x {meta_names[0]} - Computing negative contrast.")
         main_effect2 = nb.loadsave.load(
-            project_path / f"MainEffect/Volumes/{meta_names[1]}_cFWE05.nii"
+            project_path / f"MainEffect/Volumes/{meta_names[1]}_cFWE.nii"
         ).get_fdata()  # type: ignore
         significance_mask2 = main_effect2 > 0
         if significance_mask2.sum() > 0:

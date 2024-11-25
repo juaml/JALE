@@ -80,7 +80,7 @@ def main_effect(
     """
 
     # set main_effect results folder as path
-    folder_setup("MainEffect")
+    folder_setup(project_path, "MainEffect")
     project_path = (Path(project_path) / "Results/MainEffect/").resolve()
 
     # calculate smoothing kernels for each experiment
@@ -223,7 +223,7 @@ def main_effect(
         # tfce error correction
         if tfce_enabled:
             tfce_map = tfce * (tfce > tfce_threshold)
-            plot_and_save(project_path, f"{meta_name}_tfce_corrected", tfce_map)
+            plot_and_save(project_path, f"{meta_name}_tfce", tfce_map)
             if np.max(tfce) > tfce_threshold:
                 logger.info("TFCE: significant effect found.")
 
