@@ -13,6 +13,7 @@ from sklearn.utils import resample
 from sklearn_extra.cluster import KMedoids
 
 from jale.core.utils.compute import compute_ma
+from jale.core.utils.folder_setup import folder_setup
 from jale.core.utils.kernel import create_kernel_array
 from jale.core.utils.template import GM_PRIOR
 
@@ -74,6 +75,7 @@ def compute_clustering(
     subsample_fraction=0.9,
     sampling_iterations=500,
 ):
+    folder_setup(project_path, "MA_Clustering")
     # Step 2: Convert correlation matrix to correlation distance (1 - r)
     correlation_distance = 1 - correlation_matrix
 

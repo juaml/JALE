@@ -1,56 +1,82 @@
+"""This module provides a function to set up a directory structure for storing analysis results."""
+
 from pathlib import Path
 
 
-def setup_project_folder(config):
-    """Set up project paths and folders based on configuration."""
-    project_path = Path(config["project"]["path"]).resolve()
-    folder_setup(project_path)
-    return project_path
-
-
-def folder_setup(path):
+def folder_setup(path, type_of_analysis):
     """
     Set up a directory structure for storing analysis results.
 
     This function creates a nested folder structure under the specified path
-    for organizing result files related to various analyses (e.g., MainEffect,
-    Contrast). If the folders already exist, they will not be recreated.
+    for organizing result files related to various analyses. The structure
+    depends on the specified type of analysis.
 
     Parameters
     ----------
     path : Path or str
         Base path where the directory structure should be created.
 
+    type_of_analysis : str
+        Type of analysis to set up folders for. Options are:
+        - "MainEffect"
+        - "Probabilistic"
+        - "Contrast"
+        - "BalancedContrast"
+        - "MA_Clustering"
+        - "ROI"
+
     Returns
     -------
     None
     """
 
-    # Define a dictionary for the folder structure
-    # Each key represents a base directory and each value is a list of subdirectories to create
-    folder_structure = {
-        "Results/MainEffect/Full": [
-            "Volumes",
-            "Foci",
-            "Contribution",
-            "NullDistributions",
+    # Convert path to Path object if it's a string
+    path = Path(path)
+
+    # Define folder structures for each analysis type
+    analysis_folders = {
+        "MainEffect": [
+            "Results/MainEffect/Volumes",
+            "Results/MainEffect/Contribution",
+            "Results/MainEffect/NullDistributions",
+            "Results/MainEffect/Figures",
         ],
-        "Results/MainEffect/CV": ["Volumes", "NullDistributions"],
-        "Results/Contrast/Full": ["NullDistributions", "Conjunctions"],
-        "Results/Contrast/Balanced": ["NullDistributions", "Conjunctions"],
+        "Probabilistic": [
+            "Results/Probabilistic/Volumes",
+            "Results/Probabilistic/NullDistributions",
+            "Results/Probabilistic/Figures",
+        ],
+        "Contrast": [
+            "Results/Contrast/Volumes",
+            "Results/Contrast/NullDistributions",
+            "Results/Contrast/Figures",
+        ],
+        "BalancedContrast": [
+            "Results/BalancedContrast/Volumes",
+            "Results/BalancedContrast/NullDistributions",
+            "Results/BalancedContrast/Figures",
+        ],
+        "MA_Clustering": [
+            "Results/MA_Clustering",
+        ],
+        "ROI": [
+            "Results/MainEffect/ROI",
+        ],
     }
 
-    # Iterate over the base directories and their subdirectories
-    for base, subfolders in folder_structure.items():
-        # Construct the base path
-        basepath = path / base
-        # Create each subfolder within the base path
-        for folder in subfolders:
-            (basepath / folder).mkdir(
-                parents=True, exist_ok=True
-            )  # Create folder, including any necessary parents
+    # Validate the type_of_analysis
+    if type_of_analysis not in analysis_folders:
+        raise ValueError(
+            f"Invalid analysis type: {type_of_analysis}. "
+            "Valid options are: MainEffect, Probabilistic, Contrast, BalancedContrast, MA_Clustering, ROI."
+        )
 
+    # Get the folder structure for the selected analysis type
+    folders_to_create = analysis_folders[type_of_analysis]
+
+    # Create the directories for the selected analysis type
+    for folder in folders_to_create:
+        (path / folder).mkdir(parents=True, exist_ok=True)
+
+    # Create a logs folder (common across all analysis types)
     (path / "logs").mkdir(parents=True, exist_ok=True)
-    (path / "Results/MainEffect/ROI").mkdir(parents=True, exist_ok=True)
-
-    (path / "Results/MA_Clustering").mkdir(parents=True, exist_ok=True)

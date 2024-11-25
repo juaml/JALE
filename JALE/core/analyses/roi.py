@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from jale.core.utils.compute import compute_ale, compute_ma
+from jale.core.utils.folder_setup import folder_setup
 from jale.core.utils.template import GM_SAMPLE_SPACE
 
 logger = logging.getLogger("ale_logger")
@@ -11,6 +12,7 @@ logger = logging.getLogger("ale_logger")
 
 def roi_ale(project_path, exp_df, meta_name, mask, mask_name, monte_carlo_iterations):
     # Stack the modeled activation (MA) values and compute ALE values
+    folder_setup(project_path, "ROI")
     ma = np.load(project_path / f"MainEffect/{meta_name}_ma.npz")["arr_0"]
     ale = compute_ale(ma)
 

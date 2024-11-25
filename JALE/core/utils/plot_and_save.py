@@ -1,9 +1,10 @@
 import nibabel as nb
+from nilearn import plotting
 
 from jale.core.utils.template import GM_PRIOR, MNI_AFFINE
 
 
-def plot_and_save(arr, nii_path):
+def plot_and_save(project_path, analysis_name, arr):
     """
     Save a brain data array as a NIfTI file.
 
@@ -23,7 +24,10 @@ def plot_and_save(arr, nii_path):
 
     # Function that takes brain array and transforms it to NIFTI1 format
     # Saves it as a Nifti file
-    arr_masked = arr
-    arr_masked[GM_PRIOR == 0] = 0
-    nii_img = nb.nifti1.Nifti1Image(arr_masked, MNI_AFFINE)
-    nb.loadsave.save(nii_img, nii_path)
+    arr[GM_PRIOR == 0] = 0
+    if arr.any() > 0:
+        nii_img = nb.nifti1.Nifti1Image(arr, MNI_AFFINE)
+        plotting.plot_stat_map(
+            nii_img, output_file=project_path / f"Figures/{analysis_name}"
+        )
+        nb.loadsave.save(nii_img, project_path / f"Volumes/{analysis_name}")
