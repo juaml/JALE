@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 from nibabel import loadsave
 from scipy import ndimage
@@ -39,6 +41,12 @@ def contribution(project_path, exp_df, exp_name, tasks, tfce_enabled=True):
 
     # Loop through each correction method to analyze contributions
     for corr_method in corr_methods:
+        # Check if there are significant results for the current method
+        if not Path(
+            project_path / f"Results/MainEffect/Volumes/{exp_name}_{corr_method}.nii"
+        ).exists():
+            continue
+
         output_path = (
             project_path
             / f"Results/MainEffect/Contribution/{exp_name}_{corr_method}.txt"
@@ -77,10 +85,6 @@ def contribution(project_path, exp_df, exp_name, tasks, tfce_enabled=True):
                         txt, exp_df, exp_idxs, contribution_arr
                     )
                     write_task_contributions(txt, tasks, exp_idxs, contribution_arr)
-
-            else:
-                # Write a message if no significant clusters are found
-                txt.write(f"No significant clusters in {corr_method}!\n")
 
 
 def write_header(txt, exp_name, exp_df):

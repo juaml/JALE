@@ -211,6 +211,8 @@ def main_effect(
         plot_and_save(project_path, f"{meta_name}_vFWE", vfwe_map)
         if np.max(ale) > vfwe_treshold:
             logger.info("vFWE: significant effect found.")
+        else:
+            logger.info("vFWE: no significant effect found.")
 
         # cluster wise family wise error correction
         cfwe_map, max_clust = compute_clusters(
@@ -219,6 +221,8 @@ def main_effect(
         plot_and_save(project_path, f"{meta_name}_cFWE", cfwe_map)
         if max_clust > cfwe_threshold:
             logger.info("cFWE: significant effect found.")
+        else:
+            logger.info("cFWE: no significant effect found.")
 
         # tfce error correction
         if tfce_enabled:
@@ -226,6 +230,8 @@ def main_effect(
             plot_and_save(project_path, f"{meta_name}_tfce", tfce_map)
             if np.max(tfce) > tfce_threshold:
                 logger.info("TFCE: significant effect found.")
+            else:
+                logger.info("TFCE: no significant effect found.")
 
     else:
         pass

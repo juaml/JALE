@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="jale",  # Unique name for your package
-    version="0.1.17",  # Version number
+    version="0.1.19",  # Version number
     description="Package allowing users to run Activation Likelihood Estimation Meta-Analysis",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -24,7 +24,7 @@ setup(
         "scikit-learn-extra>=0.3.0",
         "matplotlib>=3.7.1",
         "seaborn>=0.12.2",
-        "nilearn>=0.12.0",
+        "nilearn>=0.10.4",
     ],
     include_package_data=True,
     classifiers=[  # Classifiers help users find your project
