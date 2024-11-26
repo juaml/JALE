@@ -79,6 +79,10 @@ def main_effect(
         specified `project_path` directory.
     """
 
+    logger.info(
+        f"{meta_name} : {exp_df.shape[0]} experiments; average of {exp_df.Subjects.mean():.2f} subjects per experiment"
+    )
+
     # set main_effect results folder as path
     folder_setup(project_path, "MainEffect")
     project_path = (Path(project_path) / "Results/MainEffect/").resolve()

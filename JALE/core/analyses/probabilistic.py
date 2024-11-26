@@ -33,6 +33,44 @@ def probabilistic_ale(
     sample_n=2500,
     nprocesses=2,
 ):
+    """
+    Compute and save probabilistic ALE maps for a given meta-analysis.
+
+    Parameters
+    ----------
+    project_path : str or Path
+        Path to the project directory containing the "Results" folder.
+    exp_df : pandas.DataFrame
+        DataFrame containing experiment data, including coordinates and number of foci.
+    meta_name : str
+        Name of the meta-analysis, used for naming saved files.
+    tfce_enabled : bool, optional
+        Whether to compute TFCE-corrected maps, by default True.
+    cutoff_predict_enabled : bool, optional
+        If True, predicts statistical thresholds using ML models, by default True.
+    bin_steps : float, optional
+        Step size for defining histogram bins, by default 0.0001.
+    cluster_forming_threshold : float, optional
+        Threshold for forming clusters in ALE, by default 0.001.
+    monte_carlo_iterations : int, optional
+        Number of Monte Carlo iterations for null distribution simulation, by default 5000.
+    target_n : int, optional
+        Target number of subsamples for probabilistic ALE, by default None (uses full sample).
+    sample_n : int, optional
+        Number of subsamples to generate if `target_n` is specified, by default 2500.
+    nprocesses : int, optional
+        Number of parallel processes for computations, by default 2.
+
+    Returns
+    -------
+    None
+        The function performs computations and saves the results as NIfTI files in the
+        specified `project_path` directory.
+    """
+    logger.info(
+        f"{meta_name} : {exp_df.shape[0]} experiments; average of {exp_df.Subjects.mean():.2f} subjects per experiment"
+    )
+
     folder_setup(project_path, "Probabilistic")
     # set cv results folder as path
     project_path = (Path(project_path) / "Results/Probabilistic/").resolve()
