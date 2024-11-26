@@ -44,9 +44,7 @@ def run_main_effect(analysis_df, row_idx, project_path, params, exp_all_df, task
     logger = logging.getLogger("ale_logger")
     meta_name = analysis_df.iloc[row_idx, 1]
 
-    result_path = (
-        project_path / f"Results/MainEffect/Full/Volumes/{meta_name}_cFWE05.nii"
-    )
+    result_path = project_path / f"Results/MainEffect/Volumes/{meta_name}_cFWE.nii"
     if result_path.exists():
         logger.info(f"Main Effect results for {meta_name} already exist.")
         return
@@ -120,7 +118,7 @@ def run_probabilistic_ale(
 
     result_path = (
         project_path
-        / f"Results/MainEffect/CV/Volumes/{meta_name}_sub_ale_{target_n}.nii"
+        / f"Results/Probabilistic/Volumes/{meta_name}_sub_ale_{target_n}.nii"
     )
     if result_path.exists():
         logger.info(f"Probabilistic ALE results for {meta_name} already exist.")
@@ -176,9 +174,7 @@ def run_contrast_analysis(
     meta_names, exp_dfs = setup_contrast_data(analysis_df, row_idx, exp_all_df, tasks)
 
     for idx, meta_name in enumerate(meta_names):
-        result_path = (
-            project_path / f"Results/MainEffect/Full/Volumes/{meta_name}_cFWE05.nii"
-        )
+        result_path = project_path / f"Results/MainEffect/Volumes/{meta_name}_cFWE.nii"
         if not result_path.exists():
             logger = logging.getLogger("ale_logger")
             logger.info(
@@ -245,7 +241,7 @@ def run_balanced_contrast(
     for idx, meta_name in enumerate(meta_names):
         result_path = (
             project_path
-            / f"Results/MainEffect/CV/Volumes/{meta_name}_sub_ale_{target_n}.nii"
+            / f"Results/MainEffect/Volumes/{meta_name}_sub_ale_{target_n}.nii"
         )
         if not result_path.exists():
             logger = logging.getLogger("ale_logger")
