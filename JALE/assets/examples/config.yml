@@ -31,3 +31,13 @@ parameters:
   # Number of parallel processes used for many different steps in the ALE algorith - maximum depends on your machine
   nprocesses: 2 # Default: 2
 # DO NOT CHANGE THESE IF YOU ARE NOT AN ALE EXPERT
+
+# MA_Clustering Parameters
+# DO NOT CHANGE THESE IF YOU ARE NOT AN ALE EXPERT!
+clustering_parameters:
+  max_clusters: 10 # Default: 10
+  subsample_fraction: 0.9 # Default: 0.9
+  sampling_iterations: 1000 # Default: 1000
+  null_iterations: 1000 # Default: 1000
+  nprocesses: 2 # Default: 2
+# DO NOT CHANGE THESE IF YOU ARE NOT AN ALE EXPERT
