@@ -172,9 +172,9 @@ def compute_permute_clustering(
         null_ma = compute_ma(shuffled_coords, kernels)
         ma_gm_masked = null_ma[:, GM_PRIOR]
         correlation_matrix, _ = spearmanr(ma_gm_masked, axis=1)
-        correlation_matrix[
-            np.isinf(correlation_matrix) | np.isnan(correlation_matrix)
-        ] = 0
+        correlation_matrix = np.nan_to_num(
+            correlation_matrix, nan=0, posinf=0, neginf=0
+        )
         correlation_distance = 1 - correlation_matrix
         condensed_distance = squareform(correlation_distance, checks=False)
         Z = linkage(condensed_distance, method="average")
@@ -289,9 +289,9 @@ def clustering(
     null_silhouette_scores, null_calinski_harabasz_scores, null_adjusted_rand_scores = (
         compute_permute_clustering(
             meta_name,
+            project_path,
             exp_df,
             kernels,
-            correlation_matrix,
             max_clusters=max_clusters,
             null_iterations=null_iterations,
         )
