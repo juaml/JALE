@@ -27,9 +27,11 @@ def plot_and_save(project_path, analysis_name, arr):
     # Saves it as a Nifti file
     arr = np.nan_to_num(arr, nan=0, posinf=0, neginf=0)
     arr[GM_PRIOR == 0] = 0
+    nii_img = nb.nifti1.Nifti1Image(arr, MNI_AFFINE)
     if arr.any() > 0:
-        nii_img = nb.nifti1.Nifti1Image(arr, MNI_AFFINE)
         plotting.plot_stat_map(
             nii_img, output_file=project_path / f"Figures/{analysis_name}"
         )
         nb.loadsave.save(nii_img, project_path / f"Volumes/{analysis_name}")
+    else:
+        nb.loadsave.save(nii_img, project_path / f"Volumes/{analysis_name}_empty")

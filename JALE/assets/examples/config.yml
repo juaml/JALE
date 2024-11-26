@@ -1,0 +1,33 @@
+# Project Folder
+project:
+  path: "/Path/to/your/project"
+  analysis_info: "file_specifying_analysis"
+  experiment_info: "file_containing_coordinates"
+
+
+
+
+# ALE Parameters
+# DO NOT CHANGE THESE IF YOU ARE NOT AN ALE EXPERT!
+parameters:
+  # TFCE is a method for multiple comparison correction (Frahm et al., 2022)
+  tfce_enabled: False
+  # If enabled uses xgboost models to predict cutoffs instead of monte carlo simulation (Frahm et al., 2024)
+  cutoff_predict_enabled: True
+  # Size of bins used in MA histogram
+  bin_steps: 0.0001 # Default: 0.0001
+  # P-value required for significance
+  significance_threshold: 0.05 # Default: 0.05
+  # Preliminary cluster forming threshold used in cluster-level family wise error correction
+  cluster_forming_threshold: 0.001 # Default: 0.001
+  # Iterations used for monte-carlo based multiple comparison correction 
+  monte_carlo_iterations: 5000 # Default: 5000
+  # Iterations used in classic contrast algorithm
+  contrast_permutations: 2500 # Default: 2500
+  # Sub-Iterations used in balanced contrast algorithm
+  difference_iterations: 1000 # Default: 1000
+  # N subsamples calculated for probabilistic ALE algorithm
+  subsample_n: 2500 # Default: 2500
+  # Number of parallel processes used for many different steps in the ALE algorith - maximum depends on your machine
+  nprocesses: 2 # Default: 2
+# DO NOT CHANGE THESE IF YOU ARE NOT AN ALE EXPERT

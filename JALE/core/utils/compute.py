@@ -574,7 +574,7 @@ def compute_sig_diff(ale_difference, null_difference, significance_threshold=0.0
         z_diff = 0
         sig_diff_idxs = 0
     else:
-        sig_diff_idxs = np.argwhere(z_diff > z_threshold)
+        sig_diff_idxs = np.where(z_diff > z_threshold)
         z_diff = z_diff[sig_diff_idxs]
 
     return z_diff, sig_diff_idxs
