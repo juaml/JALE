@@ -289,6 +289,8 @@ def clustering(
     null_silhouette_scores, null_calinski_harabasz_scores, null_adjusted_rand_scores = (
         compute_permute_clustering(
             meta_name,
+            exp_df,
+            kernels,
             correlation_matrix,
             max_clusters=max_clusters,
             null_iterations=null_iterations,
