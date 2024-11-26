@@ -366,7 +366,7 @@ def run_ale(yaml_path=None):
     logger.info("Logger initialized and project setup complete.")
 
     params = config.get("parameters", {})
-    clustering_params = config.get("clustering_params", {})
+    clustering_params = config.get("clustering_parameters", {})
     exp_all_df, tasks, analysis_df = load_dataframes(project_path, config)
 
     # Main loop to process each row in the analysis dataframe

@@ -75,7 +75,6 @@ def compute_clustering(
     subsample_fraction=0.9,
     sampling_iterations=500,
 ):
-    folder_setup(project_path, "MA_Clustering")
     # Step 2: Convert correlation matrix to correlation distance (1 - r)
     correlation_distance = 1 - correlation_matrix
 
@@ -267,6 +266,7 @@ def clustering(
     sampling_iterations=1000,
     null_iterations=1000,
 ):
+    folder_setup(project_path, "MA_Clustering")
     kernels = create_kernel_array(exp_df)
 
     ma = compute_ma(exp_df.Coordinates.values, kernels)
@@ -278,10 +278,11 @@ def clustering(
     silhouette_scores, calinski_harabasz_scores, adjusted_rand_scores = (
         compute_clustering(
             meta_name,
+            project_path,
             correlation_matrix,
             max_clusters=max_clusters,
-            subsample_fraction=0.9,
-            sampling_iterations=500,
+            subsample_fraction=subsample_fraction,
+            sampling_iterations=sampling_iterations,
         )
     )
 
@@ -290,7 +291,7 @@ def clustering(
             meta_name,
             correlation_matrix,
             max_clusters=max_clusters,
-            null_iterations=500,
+            null_iterations=null_iterations,
         )
     )
 

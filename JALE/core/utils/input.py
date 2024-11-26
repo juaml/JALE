@@ -154,7 +154,7 @@ def concat_coordinates(exp_info):
         DataFrame with concatenated coordinates for each article and a count of foci.
     """
 
-    # Check for missing values in 'Articles' column
+    # logic for excel files where each line features information in every cell (old structure)
     if exp_info["Articles"].isna().sum() == 0:
         # Group by 'Articles' and consolidate coordinates into lists
         exp_info_firstlines = exp_info.groupby("Articles").first().reset_index()
@@ -175,6 +175,7 @@ def concat_coordinates(exp_info):
             lambda row: row["Coordinates_mm"].shape[0], axis=1
         )
 
+    # logic for excel files where author, subject N, coordinate space and tags are only in first line
     else:
         # Get rows where 'Articles' column has data
         article_rows = exp_info.index[exp_info["Articles"].notnull()].tolist()
