@@ -62,7 +62,7 @@ def contrast(
     n_meta_group1 = ma1.shape[0]
 
     ma2 = np.load(project_path / f"MainEffect/{meta_names[1]}_ma.npz")["arr_0"]
-    ale2 = compute_ale(ma1)
+    ale2 = compute_ale(ma2)
     n_meta_group2 = ma2.shape[0]
 
     # Check if contrast has already been calculated
@@ -126,8 +126,15 @@ def contrast(
 
         logger.info(f"{meta_names[0]} vs {meta_names[1]} - Inference and printing.")
         contrast_arr = np.zeros(BRAIN_ARRAY_SHAPE)
-        contrast_arr[significance_mask1][sig_idxs1] = z1
-        contrast_arr[significance_mask2][sig_idxs2] = -z2
+        flat_mask1 = np.where(significance_mask1)
+        contrast_arr[
+            flat_mask1[0][sig_idxs1], flat_mask1[1][sig_idxs1], flat_mask1[2][sig_idxs1]
+        ] = z1
+
+        flat_mask2 = np.where(significance_mask2)
+        contrast_arr[
+            flat_mask2[0][sig_idxs2], flat_mask2[1][sig_idxs2], flat_mask2[2][sig_idxs2]
+        ] = -z2
         plot_and_save(
             project_path / "Contrast",
             f"{meta_names[0]}_vs_{meta_names[1]}",
