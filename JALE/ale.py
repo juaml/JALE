@@ -248,7 +248,7 @@ def run_balanced_contrast(
             logger.info(
                 f"Running subsampling ale for {meta_name} as prerequisite for balanced contrast analysis"
             )
-            main_effect(
+            probabilistic_ale(
                 project_path,
                 exp_dfs[idx],
                 meta_name,
