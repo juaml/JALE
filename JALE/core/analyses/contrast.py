@@ -155,7 +155,7 @@ def contrast(
             plot_and_save(
                 project_path / "Contrast",
                 f"{meta_names[0]}_AND_{meta_names[1]}",
-                contrast_arr,
+                conj_arr,
             )
 
     logger.info(f"{meta_names[0]} & {meta_names[1]} - done!")
