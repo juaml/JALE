@@ -258,12 +258,13 @@ def compute_clusters(z, cluster_forming_threshold, cfwe_threshold=None):
     # Find clusters of significant z-values
     labels, cluster_count = ndimage.label(sig_arr)  # type: ignore
 
+    voxel_count_clusters = np.bincount(labels[labels > 0])
     # Determine the size of the largest cluster (if any clusters exist)
-    max_clust = np.max(np.bincount(labels[labels > 0])) if cluster_count >= 1 else 0
+    max_clust = np.max(voxel_count_clusters) if cluster_count >= 1 else 0
 
     # Apply the cluster size cutoff if provided
     if cfwe_threshold:
-        significant_clusters = np.bincount(labels[labels > 0]) > cfwe_threshold
+        significant_clusters = voxel_count_clusters > cfwe_threshold
         sig_clust_labels = np.where(significant_clusters)[0]
         z = z * np.isin(labels, sig_clust_labels)
 
