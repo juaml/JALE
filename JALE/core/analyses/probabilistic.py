@@ -24,8 +24,6 @@ def probabilistic_ale(
     project_path,
     exp_df,
     meta_name,
-    tfce_enabled=True,
-    cutoff_predict_enabled=True,
     bin_steps=0.0001,
     cluster_forming_threshold=0.001,
     monte_carlo_iterations=5000,
