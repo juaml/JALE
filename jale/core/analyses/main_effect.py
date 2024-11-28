@@ -76,8 +76,8 @@ def main_effect(
     """
 
     logger.info(
-        f"{meta_name} : {exp_df.shape[0]} experiments; {exp_df.Subjects.sum(
-        )} total subjects - average of {exp_df.Subjects.mean():.2f} subjects per experiment"
+        f"{meta_name} : {exp_df.shape[0]} experiments; {exp_df.Subjects.sum()}"
+        f" total subjects - average of {exp_df.Subjects.mean():.2f} subjects per experiment"
     )
 
     # set main_effect results folder as path
