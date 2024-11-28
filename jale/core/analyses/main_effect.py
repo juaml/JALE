@@ -40,12 +40,8 @@ def main_effect(
     """
     Compute and save the main effect map for a given meta-analysis.
 
-    This function calculates the main effect for a meta-analysis specified by `meta_name`,
-    performing various analyses based on user-defined parameters, including full and probabilistic
-    ALE (Activation Likelihood Estimation), permutation testing, and statistical correction
-    through voxel-wise, cluster-wise, and TFCE (Threshold-Free Cluster Enhancement) methods.
-    If `target_n` is provided, probabilistic ALE is computed with subsampling; otherwise,
-    a full ALE is performed.
+    This function calculates the main effect ALE, going from a coordinate dataframe all the way to thresholded brain maps.
+    Uses either monte-carlo simulation or machine learning prediction for multiple comparison correction (vFWE, cFWE or TFCE).
 
     Parameters
     ----------
@@ -80,7 +76,8 @@ def main_effect(
     """
 
     logger.info(
-        f"{meta_name} : {exp_df.shape[0]} experiments; {exp_df.Subjects.sum()} total subjects - average of {exp_df.Subjects.mean():.2f} subjects per experiment"
+        f"{meta_name} : {exp_df.shape[0]} experiments; {exp_df.Subjects.sum(
+        )} total subjects - average of {exp_df.Subjects.mean():.2f} subjects per experiment"
     )
 
     # set main_effect results folder as path

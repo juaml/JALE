@@ -1,3 +1,4 @@
+import logging
 import sys
 
 import numpy as np
@@ -7,6 +8,8 @@ import yaml
 from jale.core.utils.tal2icbm_spm import tal2icbm_spm
 from jale.core.utils.template import MNI_AFFINE
 
+logger = logging.getLogger("ale_logger")
+
 
 def load_config(yaml_path):
     """Load configuration from YAML file."""
@@ -14,10 +17,10 @@ def load_config(yaml_path):
         with open(yaml_path, "r") as file:
             return yaml.safe_load(file)
     except FileNotFoundError:
-        print(f"YAML file not found at path: {yaml_path}")
+        logger.error(f"YAML file not found at path: {yaml_path}")
         sys.exit(1)
     except yaml.YAMLError as e:
-        print(f"Error loading YAML file: {e}")
+        logger.error(f"Error loading YAML file: {e}")
         sys.exit(1)
 
 
@@ -51,15 +54,15 @@ def load_excel(filepath, type="analysis"):
     try:
         df = pd.read_excel(filepath, header=header)
     except FileNotFoundError:
-        print(f"File '{filepath}' not found.")
+        logger.error(f"File '{filepath}' not found.")
         sys.exit()
     except ValueError:
-        print(
+        logger.error(
             f"Error reading Excel file '{filepath}'. Make sure it's a valid Excel file."
         )
         sys.exit()
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        logger.error(f"An error occurred: {str(e)}")
         sys.exit()
 
     # Drop any rows that are completely empty
@@ -71,7 +74,7 @@ def load_excel(filepath, type="analysis"):
         if not mistake_rows.empty:
             row_indices = mistake_rows.index.tolist()
             row_indices = np.array(row_indices) + 2
-            print(
+            logger.error(
                 f"Error: Rows with only one or two entries found at indices: {row_indices}"
             )
             sys.exit()
@@ -124,7 +127,7 @@ def check_coordinates_are_numbers(df):
             coerced_column = pd.to_numeric(df[coord_col], errors="coerce")
             non_integer_mask = (coerced_column.isnull()) | (coerced_column % 1 != 0)
             rows_with_errors = df.index[non_integer_mask]
-            print(
+            logger.error(
                 f"Non-numeric Coordinates in column {coord_col}: {rows_with_errors.values + 2}"
             )
 
@@ -137,7 +140,7 @@ def check_coordinates_are_numbers(df):
 
 def concat_coordinates(exp_info):
     """
-    Concatenate coordinate columns into arrays grouped by article.
+    Concatenate coordinate columns into arrays grouped by article + tag.
 
     This function consolidates 'x', 'y', and 'z' coordinates into a single array
     for each article, creating a 'Coordinates_mm' column. It also counts the number
@@ -157,10 +160,18 @@ def concat_coordinates(exp_info):
     # logic for excel files where each line features information in every cell (old structure)
     if exp_info["Articles"].isna().sum() == 0:
         # Group by 'Articles' and consolidate coordinates into lists
-        exp_info_firstlines = exp_info.groupby("Articles").first().reset_index()
-        exp_info_firstlines["x"] = exp_info.groupby("Articles")["x"].apply(list).values
-        exp_info_firstlines["y"] = exp_info.groupby("Articles")["y"].apply(list).values
-        exp_info_firstlines["z"] = exp_info.groupby("Articles")["z"].apply(list).values
+        exp_info_firstlines = (
+            exp_info.groupby(["Articles", "Tags"]).first().reset_index()
+        )
+        exp_info_firstlines["x"] = (
+            exp_info.groupby(["Articles", "Tags"])["x"].apply(list).values
+        )
+        exp_info_firstlines["y"] = (
+            exp_info.groupby(["Articles", "Tags"])["y"].apply(list).values
+        )
+        exp_info_firstlines["z"] = (
+            exp_info.groupby(["Articles", "Tags"])["z"].apply(list).values
+        )
 
         # Create an array of coordinates and assign it to 'Coordinates_mm'
         exp_info_firstlines["Coordinates_mm"] = exp_info_firstlines.apply(
@@ -229,7 +240,7 @@ def concat_tags(exp_info):
     """
     # Collect all non-null tag columns for each row and format them as lowercase strings
     exp_info["Tags"] = exp_info.apply(
-        lambda row: row.iloc[6:].dropna().str.lower().str.strip().values, axis=1
+        lambda row: tuple(row.iloc[6:].dropna().str.lower().str.strip().values), axis=1
     )
 
     # Drop original tag columns, keeping only up to the 'Tags' column
@@ -341,7 +352,7 @@ def create_tasks_table(exp_info):
     for count, task in enumerate(task_names):
         # Get experiment indices where the task appears
         task_exp_idxs = exp_info.index[
-            exp_info.apply(lambda row: np.any(row.Tags == task), axis=1)
+            exp_info.apply(lambda row: task in row.Tags, axis=1)
         ].to_list()
 
         # Assign details to tasks DataFrame

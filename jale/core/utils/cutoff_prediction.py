@@ -1,9 +1,12 @@
+import logging
 import sys
 from pathlib import Path
 
 import numpy as np
 import xgboost as xgb
 from scipy.stats import kurtosis, skew
+
+logger = logging.getLogger("ale_logger")
 
 
 def feature_extraction(nexp, nsub, nfoci):
@@ -39,7 +42,7 @@ def feature_extraction(nexp, nsub, nfoci):
 
     # Check for high maximum subject count to detect potential out-of-distribution data
     if nsub_max > 300:
-        print(
+        logger.warning(
             "Dataset features parameters that would lead to"
             " Out-Of-Distribution prediction: Accuracy can not be guaranteed."
             " Please disable cutoff prediction!"
@@ -59,7 +62,7 @@ def feature_extraction(nexp, nsub, nfoci):
 
     # Check for high maximum foci count to detect potential out-of-distribution data
     if nfoci_max > 150:
-        print(
+        logger.warning(
             "Dataset features parameters that would lead to"
             " Out-Of-Distribution prediction: Accuracy can not be guaranteed."
             " Please disable cutoff prediction!"
@@ -147,20 +150,20 @@ def predict_cutoff(exp_df):
     # Load pre-trained models for vFWE, cFWE, and TFCE cutoffs
     module_path = Path(__file__).resolve().parents[2]
     xgb_vfwe = xgb.XGBRegressor()
-    xgb_vfwe.load_model(module_path / "assets/ml_models/vFWE_model.txt")
+    xgb_vfwe.load_model(module_path / "assets/ml_models/vFWE_model.xgb")
 
     xgb_cfwe = xgb.XGBRegressor()
-    xgb_cfwe.load_model(module_path / "assets/ml_models/cFWE_model.txt")
+    xgb_cfwe.load_model(module_path / "assets/ml_models/cFWE_model.xgb")
 
     xgb_tfce = xgb.XGBRegressor()
-    xgb_tfce.load_model(module_path / "assets/ml_models/tfce_model.txt")
+    xgb_tfce.load_model(module_path / "assets/ml_models/tfce_model.xgb")
 
     # Calculate the number of experiments
     nexp = exp_df.shape[0]
 
     # Warn and exit if the number of experiments exceeds the model's training range
     if nexp > 150:
-        print(
+        logger.warning(
             "Dataset features parameters that would lead to"
             " Out-Of-Distribution prediction: Accuracy can not be guaranteed."
             " Please disable cutoff prediction!"

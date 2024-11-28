@@ -358,7 +358,7 @@ def run_ma_clustering(analysis_df, row_idx, project_path, params, exp_all_df, ta
 def run_ale(yaml_path=None):
     # Load config and set up paths
     config = load_config(yaml_path)
-    project_path = Path(config["project"]["path"])
+    project_path = Path(yaml_path).parent
     # Create a logs folder (common across all analysis types)
     (project_path / "logs").mkdir(parents=True, exist_ok=True)
     # Initialize the logger

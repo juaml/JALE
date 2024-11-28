@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from joblib import Parallel, delayed
 from scipy import ndimage
@@ -9,6 +11,7 @@ from jale.core.utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR, GM_SAMPLE_SPAC
 from jale.core.utils.tfce_par import tfce_par
 
 EPS = np.finfo(float).eps
+logger = logging.getLogger("ale_logger")
 
 """ Main Effect Computations """
 
@@ -499,7 +502,7 @@ def compute_sub_ale(
     ale_mean = np.zeros(BRAIN_ARRAY_SHAPE)
     for idx, sample in enumerate(samples):
         if idx % 500 == 0:
-            print(f"Calculated {idx} subsample ALEs")
+            logger.info(f"Calculated {idx} subsample ALEs")
         ale_mean += compute_sub_ale_single(
             ma[sample],
             cfwe_threshold,

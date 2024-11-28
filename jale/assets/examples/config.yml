@@ -1,6 +1,5 @@
 # Project Folder
 project:
-  path: "/Path/to/your/project"
   analysis_info: "file_specifying_analysis"
   experiment_info: "file_containing_coordinates"
 
@@ -23,7 +22,7 @@ parameters:
   # Iterations used for monte-carlo based multiple comparison correction 
   monte_carlo_iterations: 5000 # Default: 5000
   # Iterations used in classic contrast algorithm
-  contrast_permutations: 2500 # Default: 2500
+  contrast_permutations: 10000 # Default: 10000
   # Sub-Iterations used in balanced contrast algorithm
   difference_iterations: 1000 # Default: 1000
   # N subsamples calculated for probabilistic ALE algorithm

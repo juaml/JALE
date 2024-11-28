@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scipy.cluster.hierarchy import fcluster, linkage
+from scipy.cluster.hierarchy import fcluster, leaves_list, linkage
 from scipy.spatial.distance import squareform
 from scipy.stats import pearsonr, spearmanr
 from sklearn.cluster import KMeans
@@ -46,7 +46,7 @@ def clustering(
     else:
         raise ValueError("Invalid correlation_type. Choose 'spearman' or 'pearson'.")
 
-    plot_cor_matrix(project_path, correlation_matrix)
+    plot_cor_matrix(project_path, correlation_matrix, linkage_method=linkage_method)
 
     (
         silhouette_scores,
@@ -320,14 +320,24 @@ def compute_metrics_z(
     return silhouette_z, alinski_harabasz_z
 
 
-def plot_cor_matrix(project_path, correlation_matrix):
+def plot_cor_matrix(project_path, correlation_matrix, linkage_method="average"):
+    # Perform hierarchical clustering
+    linkage_matrix = linkage(correlation_matrix, method=linkage_method)
+
+    # Get the ordering of rows/columns
+    ordered_indices = leaves_list(linkage_matrix)
+
+    # Reorder the correlation matrix
+    sorted_correlation_matrix = correlation_matrix[ordered_indices][:, ordered_indices]
     plt.figure(figsize=(8, 6))
-    sns.heatmap(correlation_matrix, cmap="RdBu_r", center=0, vmin=-1, vmax=1)
+    sns.heatmap(sorted_correlation_matrix, cmap="RdBu_r", center=0, vmin=-1, vmax=1)
 
     # Add title and labels
     plt.title("Correlation Matrix with Custom Colormap")
     plt.xlabel("Experiments")
+    plt.xticks(ticks=[])
     plt.ylabel("Experiments")
+    plt.yticks(ticks=[])
 
     plt.savefig(project_path / "Results/MA_Clustering/correlation_matrix.png")
 
