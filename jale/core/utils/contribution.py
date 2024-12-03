@@ -205,19 +205,19 @@ def calculate_contributions(ma_cluster_mask, ale_cluster_mask):
     exp_idxs = np.arange(ma_cluster_mask.shape[0])
     contribution_arr = np.zeros((len(exp_idxs), 4))
     for idx in exp_idxs:
-        contribution_arr[idx, 0] = np.sum(ma_cluster_mask[idx])  # Sum of activations
+        # Sum of activations
+        contribution_arr[idx, 0] = np.sum(ma_cluster_mask[idx])
+        # Average contribution
         contribution_arr[idx, 1] = (
             100 * contribution_arr[idx, 0] / ma_cluster_mask.shape[1]
-        )  # % contribution
+        )
         proportion_of_ale = (
             compute_ale(np.delete(ma_cluster_mask, idx, axis=0)) / ale_cluster_mask
         )
-        contribution_arr[idx, 2] = 100 * (
-            1 - np.mean(proportion_of_ale)
-        )  # Mean contribution
-        contribution_arr[idx, 3] = 100 * (
-            1 - np.min(proportion_of_ale)
-        )  # Max contribution
+        # Normalized proportional contribution
+        contribution_arr[idx, 2] = 100 * (1 - np.mean(proportion_of_ale))
+        # Max contribution
+        contribution_arr[idx, 3] = 100 * (1 - np.min(proportion_of_ale))
     contribution_arr[:, 2] = (
         contribution_arr[:, 2] / np.sum(contribution_arr[:, 2])
     ) * 100  # Normalize
@@ -241,7 +241,7 @@ def write_cluster_info(txt, index, cluster_idxs, center):
     """
 
     txt.write(
-        f"\n\nCluster {index + 1}: {cluster_idxs[0].size} voxels "
+        f"\n\nCluster {index + 1}: {cluster_idxs[0].size} voxels \t\t\t SUM \t AVG \t NORM \t MAX \t SUBJ\n"
         f"[Center: {int(center[0])}/{int(center[1])}/{int(center[2])}]\n"
     )
 
@@ -290,7 +290,7 @@ def write_task_contributions(txt, tasks, exp_idxs_full, contribution_arr):
     contribution_arr : numpy.ndarray
         Array of contribution values for each experiment.
     """
-    txt.write("\nTask Contributions:\n")
+    txt.write("\nTask Contributions:\t\t SUM \t AVG \t NORM\n")
     for i, task_name in enumerate(tasks.Name):
         # Only include tasks with included experiments
         mask = [s in tasks.ExpIndex[i] for s in exp_idxs_full]
@@ -298,7 +298,7 @@ def write_task_contributions(txt, tasks, exp_idxs_full, contribution_arr):
             task_contribution = np.sum(contribution_arr[mask], axis=0)
             if task_contribution[0] > 0.01:  # Filter low contributions
                 txt.write(
-                    f"{task_name.ljust(tasks.Name.str.len().max())}\t"
+                    f"{task_name.ljust(tasks.Name.str.len().max())}\t\t\t"
                     f"{task_contribution[0]:.3f}\t{task_contribution[1]:.3f}\t"
                     f"{task_contribution[2]:.2f}\n"
                 )
