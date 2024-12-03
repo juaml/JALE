@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import numpy as np
 from nibabel import loadsave
 from scipy import ndimage
@@ -9,7 +7,9 @@ from jale.core.utils.kernel import create_kernel_array
 from jale.core.utils.template import MNI_AFFINE
 
 
-def contribution(project_path, exp_df, exp_name, tasks, tfce_enabled=True):
+def contribution(
+    project_path, exp_df, exp_idxs_full, exp_name, tasks, tfce_enabled=True
+):
     """
     Analyze contributions of individual studies and tasks to significant clusters in a meta-analysis.
 
@@ -19,6 +19,8 @@ def contribution(project_path, exp_df, exp_name, tasks, tfce_enabled=True):
         Path to the project directory.
     exp_df : pandas.DataFrame
         DataFrame containing details of individual experiments, including their coordinates.
+    exp_idxs_full : numpy.ndarray
+        Array of experiment indices, using full experiment_info excel sheet.
     exp_name : str
         Name of the experiment or meta-analysis for file naming.
     tasks : pandas.DataFrame
@@ -31,8 +33,7 @@ def contribution(project_path, exp_df, exp_name, tasks, tfce_enabled=True):
     None
         The function saves results to a text file in the specified `project_path`.
     """
-    # Create an array of experiment indices and generate MA maps and smoothing kernels
-    exp_idxs = np.arange(exp_df.shape[0])
+    # Generate MA maps and smoothing kernels
     kernels = create_kernel_array(exp_df)
     ma = compute_ma(exp_df.Coordinates, kernels)
 
@@ -71,14 +72,14 @@ def contribution(project_path, exp_df, exp_name, tasks, tfce_enabled=True):
                     ]
                     ale_cluster_mask = compute_ale(ma_cluster_mask)
                     contribution_arr = calculate_contributions(
-                        exp_idxs, ma_cluster_mask, ale_cluster_mask
+                        ma_cluster_mask, ale_cluster_mask
                     )
 
                     # Write the contributions of individual experiments and tasks to the text file
-                    write_experiment_contributions(
-                        txt, exp_df, exp_idxs, contribution_arr
+                    write_experiment_contributions(txt, exp_df, contribution_arr)
+                    write_task_contributions(
+                        txt, tasks, exp_idxs_full, contribution_arr
                     )
-                    write_task_contributions(txt, tasks, exp_idxs, contribution_arr)
 
             else:
                 txt.write("\nNo significant clusters found!\n")
@@ -185,14 +186,12 @@ def compute_cluster_center(cluster_idxs):
     )
 
 
-def calculate_contributions(exp_idxs, ma_cluster_mask, ale_cluster_mask):
+def calculate_contributions(ma_cluster_mask, ale_cluster_mask):
     """
     Calculate the contribution of each experiment to a cluster.
 
     Parameters
     ----------
-    exp_idxs : numpy.ndarray
-        Array of experiment indices.
     ma_cluster_mask : numpy.ndarray
         Masked modeled activation maps for the current cluster.
     ale_cluster_mask : numpy.ndarray
@@ -203,7 +202,7 @@ def calculate_contributions(exp_idxs, ma_cluster_mask, ale_cluster_mask):
     numpy.ndarray
         Array of contribution values for each experiment.
     """
-
+    exp_idxs = np.arange(ma_cluster_mask.shape[0])
     contribution_arr = np.zeros((len(exp_idxs), 4))
     for idx in exp_idxs:
         contribution_arr[idx, 0] = np.sum(ma_cluster_mask[idx])  # Sum of activations
@@ -247,7 +246,7 @@ def write_cluster_info(txt, index, cluster_idxs, center):
     )
 
 
-def write_experiment_contributions(txt, exp_df, exp_idxs, contribution_arr):
+def write_experiment_contributions(txt, exp_df, contribution_arr):
     """
     Write the contribution of each experiment to the current cluster.
 
@@ -257,8 +256,6 @@ def write_experiment_contributions(txt, exp_df, exp_idxs, contribution_arr):
         Opened file object for writing results.
     exp_df : pandas.DataFrame
         DataFrame containing experiment details.
-    exp_idxs : numpy.ndarray
-        Array of experiment indices.
     contribution_arr : numpy.ndarray
         Array of contribution values for each experiment.
     """
@@ -278,7 +275,7 @@ def write_experiment_contributions(txt, exp_df, exp_idxs, contribution_arr):
             )
 
 
-def write_task_contributions(txt, tasks, exp_idxs, contribution_arr):
+def write_task_contributions(txt, tasks, exp_idxs_full, contribution_arr):
     """
     Write the contribution of each task to the current cluster.
 
@@ -288,15 +285,16 @@ def write_task_contributions(txt, tasks, exp_idxs, contribution_arr):
         Opened file object for writing results.
     tasks : pandas.DataFrame
         DataFrame containing task information.
-    exp_idxs : numpy.ndarray
-        Array of experiment indices.
+    exp_idxs_full : numpy.ndarray
+        Array of experiment indices, using full experiment_info excel sheet.
     contribution_arr : numpy.ndarray
         Array of contribution values for each experiment.
     """
     txt.write("\nTask Contributions:\n")
     for i, task_name in enumerate(tasks.Name):
-        mask = [s in tasks.ExpIndex[i] for s in exp_idxs]
-        if any(mask):  # Only include tasks with contributions
+        # Only include tasks with included experiments
+        mask = [s in tasks.ExpIndex[i] for s in exp_idxs_full]
+        if any(mask):
             task_contribution = np.sum(contribution_arr[mask], axis=0)
             if task_contribution[0] > 0.01:  # Filter low contributions
                 txt.write(

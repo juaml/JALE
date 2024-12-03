@@ -65,7 +65,9 @@ def run_main_effect(analysis_df, row_idx, project_path, params, exp_all_df, task
         monte_carlo_iterations=params["monte_carlo_iterations"],
         nprocesses=params["nprocesses"],
     )
-    contribution(project_path, exp_df, meta_name, tasks, params["tfce_enabled"])
+    contribution(
+        project_path, exp_df, exp_idxs, meta_name, tasks, params["tfce_enabled"]
+    )
 
     if masks:
         for idx, mask in enumerate(masks):

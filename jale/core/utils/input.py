@@ -24,7 +24,7 @@ def load_config(yaml_path):
         sys.exit(1)
 
 
-def load_excel(filepath, type="analysis"):
+def load_experiment_excel(filepath):
     """
     Load an Excel file and perform basic processing based on the specified type.
 
@@ -44,15 +44,9 @@ def load_excel(filepath, type="analysis"):
     pandas.DataFrame
         DataFrame with the loaded and processed data.
     """
-
-    # Set header row based on file type
-    header = None
-    if type == "experiment":
-        header = 0
-
     # Attempt to load the Excel file and handle errors if they occur
     try:
-        df = pd.read_excel(filepath, header=header)
+        df = pd.read_excel(filepath, header=0)
     except FileNotFoundError:
         logger.error(f"File '{filepath}' not found.")
         sys.exit()
@@ -68,28 +62,49 @@ def load_excel(filepath, type="analysis"):
     # Drop any rows that are completely empty
     df.dropna(inplace=True, how="all")
 
-    if type == "experiment":
-        # Check for rows with only one non-NaN entry
-        mistake_rows = df[(df.notna().sum(axis=1) == 1) | (df.notna().sum(axis=1) == 2)]
-        if not mistake_rows.empty:
-            row_indices = mistake_rows.index.tolist()
-            row_indices = np.array(row_indices) + 2
-            logger.error(
-                f"Error: Rows with only one or two entries found at indices: {row_indices}"
-            )
-            sys.exit()
+    # Check for rows with only one non-NaN entry
+    mistake_rows = df[(df.notna().sum(axis=1) == 1) | (df.notna().sum(axis=1) == 2)]
+    if not mistake_rows.empty:
+        row_indices = mistake_rows.index.tolist()
+        row_indices = np.array(row_indices) + 2
+        logger.error(
+            f"Error: Rows with only one or two entries found at indices: {row_indices}"
+        )
+        sys.exit()
 
-        # Rename the first columns to standard names
-        current_column_names = df.columns.values
-        current_column_names[:6] = [
-            "Articles",
-            "Subjects",
-            "x",
-            "y",
-            "z",
-            "CoordinateSpace",
-        ]
-        df.columns = current_column_names
+    # Rename the first columns to standard names
+    current_column_names = df.columns.values
+    current_column_names[:6] = [
+        "Articles",
+        "Subjects",
+        "x",
+        "y",
+        "z",
+        "CoordinateSpace",
+    ]
+    df.columns = current_column_names
+
+    df[["x", "y", "z"]] = df[["x", "y", "z"]].astype(float)
+
+    return df
+
+
+def load_analysis_excel(filepath):
+    try:
+        df = pd.read_excel(filepath, header=None)
+    except FileNotFoundError:
+        logger.error(f"File '{filepath}' not found.")
+        sys.exit()
+    except ValueError:
+        logger.error(
+            f"Error reading Excel file '{filepath}'. Make sure it's a valid Excel file."
+        )
+        sys.exit()
+    except Exception as e:
+        logger.error(f"An error occurred: {str(e)}")
+        sys.exit()
+
+    df.dropna(inplace=True, how="all")
 
     return df
 
@@ -397,7 +412,7 @@ def read_experiment_info(filename):
         - pandas.DataFrame : Summary of tasks.
     """
     # Load the experimental data from the Excel file
-    exp_info = load_excel(filepath=filename, type="experiment")
+    exp_info = load_experiment_excel(filepath=filename)
 
     # Verify coordinates are numeric and concatenate tag information
     exp_info = check_coordinates_are_numbers(exp_info)
@@ -435,7 +450,5 @@ def load_dataframes(project_path, config):
     exp_all_df, tasks = read_experiment_info(
         project_path / config["project"]["experiment_info"]
     )
-    analysis_df = load_excel(
-        project_path / config["project"]["analysis_info"], type="analysis"
-    )
+    analysis_df = load_analysis_excel(project_path / config["project"]["analysis_info"])
     return exp_all_df, tasks, analysis_df

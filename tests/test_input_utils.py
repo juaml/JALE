@@ -10,7 +10,7 @@ from jale.core.utils.input import (
     concat_tags,
     convert_tal_2_mni,
     create_tasks_table,
-    load_excel,
+    load_experiment_excel,
     transform_coordinates_to_voxel_space,
 )
 from tests.utils import get_test_data_path
@@ -49,18 +49,18 @@ def loaded_excel_concat():
 
 def test_load_excel(tmp_path):
     data_file = op.join(get_test_data_path(), "test_expinfo_correct.xlsx")
-    loaded_df = load_excel(data_file, type="experiment")
+    loaded_df = load_experiment_excel(data_file)
     assert loaded_df.shape == (25, 8)
 
     # Test loading a non-existent file
     with pytest.raises(SystemExit):
-        load_excel("non_existent_file.xlsx")
+        load_experiment_excel("non_existent_file.xlsx")
 
     # Create a temporary invalid file
     test_file = tmp_path / "test.txt"
     # Test that a ValueError is raised for invalid Excel files
     with pytest.raises(SystemExit):
-        load_excel(test_file)
+        load_experiment_excel(test_file)
 
 
 def test_coordinate_numbers_check_true(loaded_excel_base, capfd):
