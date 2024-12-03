@@ -256,10 +256,11 @@ def compute_clusters(z, cluster_forming_threshold, cfwe_threshold=None):
     """
 
     # Threshold z-values based on the specified cluster threshold
+    z = np.nan_to_num(z)
     sig_arr = (z > norm.ppf(1 - cluster_forming_threshold)).astype(int)
 
     # Find clusters of significant z-values
-    labels, cluster_count = ndimage.label(sig_arr)  # type: ignore
+    labels, cluster_count = ndimage.label(sig_arr)
 
     voxel_count_clusters = np.bincount(labels[labels > 0])
     # Determine the size of the largest cluster (if any clusters exist)

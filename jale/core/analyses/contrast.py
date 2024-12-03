@@ -143,7 +143,7 @@ def contrast(
 
     # Check if conjunction has already been calculated
     if Path(
-        project_path / f"Contrast/Volumes/{meta_names[0]}_AND_{meta_names[1]}_cFWE.nii"
+        project_path / f"Contrast/Volumes/{meta_names[0]}_AND_{meta_names[1]}.nii"
     ).exists():
         logger.info(
             f"{meta_names[0]} & {meta_names[1]} - Conjunction already computed. Skipping."

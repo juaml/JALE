@@ -54,7 +54,7 @@ def contribution(
             # Load the ALE results corrected by the current method
             results = load_corrected_results(project_path, exp_name, corr_method)
             if results.any() > 0:  # Proceed only if there are significant results
-                labels, cluster_counts = ndimage.label(results)  # type: ignore
+                labels, cluster_counts = ndimage.label(results)
                 clusters = get_clusters(
                     labels, min_size=5
                 )  # Identify clusters with at least 5 voxels
@@ -135,7 +135,10 @@ def load_corrected_results(project_path, exp_name, corr_method):
             / f"Results/MainEffect/Volumes/{exp_name}_{corr_method}_empty.nii"
         )
         results = loadsave.load(file_path).get_fdata()
-    return np.nan_to_num(results)  # Replace NaNs with zeros for further processing
+
+    # Binarize for clustering
+    results_binary = np.where(results > 0, 1, 0)
+    return np.nan_to_num(results_binary)
 
 
 def get_clusters(labels, min_size=5):

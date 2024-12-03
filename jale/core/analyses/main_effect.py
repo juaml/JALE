@@ -22,6 +22,7 @@ from jale.core.utils.cutoff_prediction import predict_cutoff
 from jale.core.utils.folder_setup import folder_setup
 from jale.core.utils.kernel import create_kernel_array
 from jale.core.utils.plot_and_save import plot_and_save
+from jale.core.utils.template import GM_PRIOR
 
 logger = logging.getLogger("ale_logger")
 
@@ -208,6 +209,7 @@ def main_effect(
     if not Path(project_path / f"Volumes/{meta_name}_vFWE.nii").exists():
         logger.info(f"{meta_name} - inference and printing")
         # voxel wise family wise error correction
+        ale[GM_PRIOR == 0] = 0
         vfwe_map = ale * (ale > vfwe_treshold)
         plot_and_save(project_path, f"{meta_name}_vFWE", vfwe_map)
         if np.max(ale) > vfwe_treshold:
@@ -216,6 +218,7 @@ def main_effect(
             logger.info("vFWE: no significant effect found.")
 
         # cluster wise family wise error correction
+        z[GM_PRIOR == 0] = 0
         cfwe_map, max_clust = compute_clusters(
             z, cluster_forming_threshold, cfwe_threshold
         )
@@ -227,6 +230,7 @@ def main_effect(
 
         # tfce error correction
         if tfce_enabled:
+            tfce[GM_PRIOR == 0] = 0
             tfce_map = tfce * (tfce > tfce_threshold)
             plot_and_save(project_path, f"{meta_name}_tfce", tfce_map)
             if np.max(tfce) > tfce_threshold:

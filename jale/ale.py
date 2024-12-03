@@ -173,7 +173,9 @@ def run_contrast_analysis(
         The function performs computations and saves the results as NIfTI files in the
         specified `project_path` directory.
     """
-    meta_names, exp_dfs = setup_contrast_data(analysis_df, row_idx, exp_all_df, tasks)
+    meta_names, exp_dfs, exp_idxs = setup_contrast_data(
+        analysis_df, row_idx, exp_all_df, tasks
+    )
 
     for idx, meta_name in enumerate(meta_names):
         result_path = project_path / f"Results/MainEffect/Volumes/{meta_name}_cFWE.nii"
@@ -194,7 +196,12 @@ def run_contrast_analysis(
                 nprocesses=params["nprocesses"],
             )
             contribution(
-                project_path, exp_dfs[idx], meta_name, tasks, params["tfce_enabled"]
+                project_path,
+                exp_dfs[idx],
+                exp_idxs[idx],
+                meta_name,
+                tasks,
+                params["tfce_enabled"],
             )
 
     exp_overlap = set(exp_dfs[0].index) & set(exp_dfs[1].index)
@@ -236,7 +243,9 @@ def run_balanced_contrast(
         The function performs computations and saves the results as NIfTI files in the
         specified `project_path` directory.
     """
-    meta_names, exp_dfs = setup_contrast_data(analysis_df, row_idx, exp_all_df, tasks)
+    meta_names, exp_dfs, exp_idxs = setup_contrast_data(
+        analysis_df, row_idx, exp_all_df, tasks
+    )
     target_n = determine_target_n(analysis_df.iloc[row_idx, 0], exp_dfs)
 
     # Check if subsampling ALE were already run; if not - run them
@@ -304,11 +313,13 @@ def setup_contrast_data(analysis_df, row_idx, exp_all_df, tasks):
     exp_idxs1, _, _ = compile_experiments(conditions[0], tasks)
     exp_idxs2, _, _ = compile_experiments(conditions[1], tasks)
 
+    exp_idxs = [exp_idxs1, exp_idxs2]
+
     exp_dfs = [
         exp_all_df.loc[exp_idxs1].reset_index(drop=True),
         exp_all_df.loc[exp_idxs2].reset_index(drop=True),
     ]
-    return meta_names, exp_dfs
+    return meta_names, exp_dfs, exp_idxs
 
 
 def determine_target_n(row_value, exp_dfs):
