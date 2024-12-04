@@ -188,6 +188,7 @@ def compute_z(ale, hx_conv, step):
     # calculate z-values by plugging 1-p into a probability density function
     z = norm.ppf(1 - p)
     z[z < 0] = 0
+    z = np.nan_to_num(z, nan=0)
 
     return z
 
