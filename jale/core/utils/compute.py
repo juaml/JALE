@@ -1,14 +1,12 @@
 import logging
 
 import numpy as np
-from joblib import Parallel, delayed
 from scipy import ndimage
 from scipy.special import comb
 from scipy.stats import norm
 
 from jale.core.utils.kernel import kernel_convolution
 from jale.core.utils.template import BRAIN_ARRAY_SHAPE, GM_PRIOR, GM_SAMPLE_SPACE
-from jale.core.utils.tfce_par import tfce_par
 
 EPS = np.finfo(float).eps
 logger = logging.getLogger("ale_logger")
@@ -193,41 +191,39 @@ def compute_z(ale, hx_conv, step):
     return z
 
 
-def compute_tfce(z, nprocesses=1):
+def compute_tfce(z, E=0.5, H=2, delta_t_steps=100):
     """
-    Calculate TFCE (Threshold-Free Cluster Enhancement) values for a given z-map.
+    Compute Threshold-Free Cluster Enhancement (TFCE).
 
-    Uses a parallelized method to compute TFCE scores based on the intensity and
-    extent of clusters in the z-map.
+    Parameters:
+        z (np.ndarray): Input 3D array of z-values.
+        E (float): TFCE enhancement exponent for cluster extent.
+        H (float): TFCE enhancement exponent for intensity.
+        delta_t_steps (int): Number of steps for the intensity thresholding.
 
-    Parameters
-    ----------
-    z : numpy.ndarray
-        Array of z-values for thresholding.
-    nprocesses : int, optional
-        Number of parallel processes to use, by default 1.
-
-    Returns
-    -------
-    numpy.ndarray
-        Array of TFCE values.
+    Returns:
+        np.ndarray: TFCE-enhanced 3D array.
     """
+    max_z = np.max(z)
+    delta_t = max_z / delta_t_steps  # Intensity step size
 
-    delta_t = np.max(z) / 100
+    tfce = np.zeros_like(z, dtype=np.float64)  # Initialize TFCE array
 
-    tfce = np.zeros(z.shape)
-    # calculate tfce values using the parallelized function
-    vals, masks = zip(
-        *Parallel(n_jobs=nprocesses)(
-            delayed(tfce_par)(invol=z, h=h, dh=delta_t)
-            for h in np.arange(0, np.max(z), delta_t)
-        )
-    )
-    # Parallelization makes it necessary to integrate the results afterwards
-    # Each repition creats it's own mask and
-    # an amount of values corresponding to that mask
-    for i in range(len(vals)):
-        tfce[masks[i]] += vals[i]
+    # Iterate over intensity thresholds
+    for h in np.arange(0, max_z, delta_t):
+        thresh = z > h  # Suprathreshold binary mask
+        labels, cluster_count = ndimage.label(thresh)  # Identify clusters
+
+        # Calculate cluster sizes
+        _, sizes = np.unique(labels, return_counts=True)
+        sizes[0] = 0  # Ignore background cluster (label 0)
+
+        # Apply mask for suprathreshold voxels
+        mask = labels > 0
+        cluster_sizes = sizes[labels[mask]]
+
+        # Update TFCE values for suprathreshold clusters
+        tfce[mask] += np.power(h, H) * delta_t * np.power(cluster_sizes, E)
 
     return tfce
 
