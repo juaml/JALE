@@ -276,7 +276,7 @@ def run_balanced_contrast(
         target_n,
         difference_iterations=params["difference_iterations"],
         monte_carlo_iterations=params["monte_carlo_iterations"],
-        nprocesses=2,
+        nprocesses=params["nprocesses"],
     )
 
 

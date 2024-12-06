@@ -64,19 +64,19 @@ def balanced_contrast(
     # set results folder as path
     project_path = (Path(project_path) / "Results/").resolve()
 
-    kernels1 = np.load(project_path / f"MainEffect/{meta_names[0]}_kernels.npy")
+    kernels1 = np.load(project_path / f"Probabilistic/{meta_names[0]}_kernels.npy")
 
-    kernels2 = np.load(project_path / f"MainEffect/{meta_names[1]}_kernels.npy")
+    kernels2 = np.load(project_path / f"Probabilistic/{meta_names[1]}_kernels.npy")
 
-    ma1 = np.load(project_path / f"MainEffect/{meta_names[0]}_ma.npz")["arr_0"]
+    ma1 = np.load(project_path / f"Probabilistic/{meta_names[0]}_ma.npz")["arr_0"]
 
-    ma2 = np.load(project_path / f"MainEffect/{meta_names[1]}_ma.npz")["arr_0"]
+    ma2 = np.load(project_path / f"Probabilistic/{meta_names[1]}_ma.npz")["arr_0"]
 
     main_effect1 = nb.loadsave.load(
-        project_path / f"Probablistic/Volumes/{meta_names[0]}_sub_ale_{target_n}.nii"
+        project_path / f"Probabilistic/Volumes/{meta_names[0]}_sub_ale_{target_n}.nii"
     ).get_fdata()  # type: ignore
     main_effect2 = nb.loadsave.load(
-        project_path / f"Probablistic/Volumes/{meta_names[1]}_sub_ale_{target_n}.nii"
+        project_path / f"Probabilistic/Volumes/{meta_names[1]}_sub_ale_{target_n}.nii"
     ).get_fdata()  # type: ignore
 
     if not Path(
