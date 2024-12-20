@@ -33,6 +33,7 @@ def main_effect(
     meta_name,
     tfce_enabled=True,
     cutoff_predict_enabled=True,
+    gm_masking=True,
     bin_steps=0.0001,
     cluster_forming_threshold=0.001,
     monte_carlo_iterations=5000,
@@ -132,6 +133,8 @@ def main_effect(
     else:
         logger.info(f"{meta_name} - computing ALE and null PDF")
         ale = compute_ale(ma)
+        if gm_masking == "True":
+            ale[GM_PRIOR == 0] = 0
         plot_and_save(project_path, f"{meta_name}_ale", ale)
 
         # Calculate histogram and use it to estimate a null probability density function
@@ -209,7 +212,6 @@ def main_effect(
     if not Path(project_path / f"Volumes/{meta_name}_vFWE.nii").exists():
         logger.info(f"{meta_name} - inference and printing")
         # voxel wise family wise error correction
-        ale[GM_PRIOR == 0] = 0
         vfwe_map = ale * (ale > vfwe_treshold)
         plot_and_save(project_path, f"{meta_name}_vFWE", vfwe_map)
         if np.max(ale) > vfwe_treshold:
@@ -218,7 +220,6 @@ def main_effect(
             logger.info("vFWE: no significant effect found.")
 
         # cluster wise family wise error correction
-        z[GM_PRIOR == 0] = 0
         cfwe_map, max_clust = compute_clusters(
             z, cluster_forming_threshold, cfwe_threshold
         )
@@ -230,7 +231,6 @@ def main_effect(
 
         # tfce error correction
         if tfce_enabled:
-            tfce[GM_PRIOR == 0] = 0
             tfce_map = tfce * (tfce > tfce_threshold)
             plot_and_save(project_path, f"{meta_name}_tfce", tfce_map)
             if np.max(tfce) > tfce_threshold:

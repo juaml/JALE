@@ -60,6 +60,7 @@ def run_main_effect(analysis_df, row_idx, project_path, params, exp_all_df, task
         meta_name,
         tfce_enabled=params["tfce_enabled"],
         cutoff_predict_enabled=params["cutoff_predict_enabled"],
+        gm_masking=params["gm_masking"],
         bin_steps=params["bin_steps"],
         cluster_forming_threshold=params["cluster_forming_threshold"],
         monte_carlo_iterations=params["monte_carlo_iterations"],

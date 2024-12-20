@@ -13,6 +13,8 @@ parameters:
   tfce_enabled: False
   # If enabled uses xgboost models to predict cutoffs instead of monte carlo simulation (Frahm et al., 2024)
   cutoff_predict_enabled: True
+  # if enabled ALE map (and therefore all following maps) will be masked by ICBM 10% GM mask
+  gm_masking: True
   # Size of bins used in MA histogram
   bin_steps: 0.0001 # Default: 0.0001
   # P-value required for significance
