@@ -2,7 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scipy.cluster.hierarchy import fcluster, leaves_list, linkage
+from scipy.cluster.hierarchy import (
+    dendrogram,
+    fcluster,
+    leaves_list,
+    linkage,
+    optimal_leaf_ordering,
+)
 from scipy.spatial.distance import squareform
 from scipy.stats import pearsonr, spearmanr
 from sklearn.cluster import KMeans
@@ -13,7 +19,6 @@ from sklearn.metrics import (
 )
 from sklearn.metrics.cluster import entropy, mutual_info_score
 from sklearn.utils import resample
-from sklearn_extra.cluster import KMedoids
 
 from jale.core.utils.compute import compute_ma
 from jale.core.utils.folder_setup import folder_setup
@@ -30,7 +35,7 @@ def clustering(
     linkage_method="complete",  # complete or average
     max_clusters=10,
     subsample_fraction=0.9,
-    sampling_iterations=1000,
+    sampling_iterations=500,
     null_iterations=1000,
 ):
     folder_setup(project_path, "MA_Clustering")
@@ -46,7 +51,12 @@ def clustering(
     else:
         raise ValueError("Invalid correlation_type. Choose 'spearman' or 'pearson'.")
 
-    plot_cor_matrix(project_path, correlation_matrix, linkage_method=linkage_method)
+    plot_cor_matrix(
+        project_path,
+        correlation_matrix,
+        correlation_type,
+        linkage_method=linkage_method,
+    )
 
     (
         silhouette_scores,
@@ -57,6 +67,7 @@ def clustering(
         meta_name,
         project_path,
         correlation_matrix,
+        correlation_type=correlation_type,
         linkage_method=linkage_method,
         clustering_method=clustering_method,
         max_clusters=max_clusters,
@@ -69,11 +80,15 @@ def clustering(
         project_path,
         exp_df,
         kernels,
+        correlation_type,
+        clustering_method=clustering_method,
+        linkage_method=linkage_method,
         max_clusters=max_clusters,
         null_iterations=null_iterations,
+        subsample_fraction=subsample_fraction,
     )
 
-    silhouette_z, alinski_harabasz_z = compute_metrics_z(
+    silhouette_z, calinski_harabasz_z = compute_metrics_z(
         silhouette_scores,
         calinski_harabasz_scores,
         null_silhouette_scores,
@@ -83,9 +98,12 @@ def clustering(
     plot_clustering_metrics(
         project_path,
         silhouette_scores_z=silhouette_z,
-        calinski_harabasz_scores_z=alinski_harabasz_z,
-        adjusted_rand_index_z=adjusted_rand_index,
-        voi_scores_z=variation_of_information,
+        calinski_harabasz_scores_z=calinski_harabasz_z,
+        adjusted_rand_index=adjusted_rand_index,
+        variation_of_information=variation_of_information,
+        correlation_type=correlation_type,
+        clustering_method=clustering_method,
+        linkage_method=linkage_method,
     )
 
     save_clustering_metrics(
@@ -93,9 +111,12 @@ def clustering(
         silhouette_scores=silhouette_scores,
         silhouette_scores_z=silhouette_z,
         calinski_harabasz_scores=calinski_harabasz_scores,
-        calinski_harabasz_scores_z=alinski_harabasz_z,
-        adjusted_rand_index_z=adjusted_rand_index,
-        voi_scores_z=variation_of_information,
+        calinski_harabasz_scores_z=calinski_harabasz_z,
+        adjusted_rand_index=adjusted_rand_index,
+        variation_of_information=variation_of_information,
+        correlation_type=correlation_type,
+        clustering_method=clustering_method,
+        linkage_method=linkage_method,
     )
 
 
@@ -103,14 +124,17 @@ def compute_clustering(
     meta_name,
     project_path,
     correlation_matrix,
-    clustering_method="hierarchical",
-    linkage_method="complete",
-    max_clusters=10,
-    subsample_fraction=0.9,
-    sampling_iterations=500,
+    correlation_type,
+    clustering_method,
+    linkage_method,
+    max_clusters,
+    subsample_fraction,
+    sampling_iterations,
 ):
     # Convert correlation matrix to correlation distance (1 - r)
     correlation_distance = 1 - correlation_matrix
+    np.fill_diagonal(correlation_distance, 0)
+    condensed_distance = squareform(correlation_distance, checks=False)
 
     silhouette_scores = np.empty((max_clusters - 1, sampling_iterations))
     calinski_harabasz_scores = np.empty((max_clusters - 1, sampling_iterations))
@@ -169,11 +193,9 @@ def compute_clustering(
             )
             calinski_harabasz_scores[k - 2, i] = calinski_harabasz_avg
 
-            # K-Medoids for comparison labels in adjusted rand and variation of information
-            kmedoids = KMedoids(n_clusters=k, metric="precomputed").fit(
-                resampled_distance
-            )
-            vof_labels = kmedoids.labels_
+            # Random clustering for comparison labels in adjusted rand and variation of information
+            random_labels = np.random.randint(0, k, size=resampled_distance.shape[0])
+            vof_labels = random_labels
 
             # Adjusted Rand Score
             adjusted_rand_avg = adjusted_rand_score(cluster_labels, vof_labels)
@@ -183,25 +205,42 @@ def compute_clustering(
             vi_score = compute_variation_of_information(cluster_labels, vof_labels)
             variation_of_information[k - 2, i] = vi_score
 
+        plot_sorted_dendrogram(
+            project_path,
+            linkage_matrix=linkage(correlation_matrix, method=linkage_method),
+            distance_matrix=condensed_distance,
+            correlation_type=correlation_type,
+            clustering_method=clustering_method,
+            linkage_method=linkage_method,
+            k=k,
+        )
+
     # Save results
     np.save(
-        project_path / f"Results/MA_Clustering/{meta_name}_silhouette_scores.npy",
+        project_path
+        / f"Results/MA_Clustering/tmp/{meta_name}_silhouette_scores_{correlation_type}_{clustering_method}_{linkage_method}.npy",
         silhouette_scores,
     )
     np.save(
         project_path
-        / f"Results/MA_Clustering/{meta_name}_calinski_harabasz_scores.npy",
+        / f"Results/MA_Clustering/tmp/{meta_name}_calinski_harabasz_scores_{correlation_type}_{clustering_method}_{linkage_method}.npy",
         calinski_harabasz_scores,
     )
     np.save(
-        project_path / f"Results/MA_Clustering/{meta_name}_adjusted_rand_index.npy",
+        project_path
+        / f"Results/MA_Clustering/tmp/{meta_name}_adjusted_rand_index_{correlation_type}_{clustering_method}_{linkage_method}.npy",
         adjusted_rand_index,
     )
     np.save(
         project_path
-        / f"Results/MA_Clustering/{meta_name}_variation_of_information.npy",
+        / f"Results/MA_Clustering/tmp/{meta_name}_variation_of_information_{correlation_type}_{clustering_method}_{linkage_method}.npy",
         variation_of_information,
     )
+
+    silhouette_scores = np.average(silhouette_scores, axis=1)
+    calinski_harabasz_scores = np.average(calinski_harabasz_scores, axis=1)
+    adjusted_rand_index = np.average(adjusted_rand_index, axis=1)
+    variation_of_information = np.average(variation_of_information, axis=1)
 
     return (
         silhouette_scores,
@@ -212,16 +251,35 @@ def compute_clustering(
 
 
 def compute_permute_clustering(
-    meta_name, project_path, exp_df, kernels, max_clusters, null_iterations
+    meta_name,
+    project_path,
+    exp_df,
+    kernels,
+    correlation_type,
+    clustering_method,
+    linkage_method,
+    max_clusters,
+    null_iterations,
+    subsample_fraction,
 ):
     null_silhouette_scores = np.empty((max_clusters - 1, null_iterations))
     null_calinski_harabasz_scores = np.empty((max_clusters - 1, null_iterations))
 
     for n in range(null_iterations):
-        coords_stacked = np.vstack(exp_df.Coordinates.values)
+        # Create an index array for subsampling
+        sampled_indices = np.random.choice(
+            exp_df.index, size=int(subsample_fraction * len(exp_df)), replace=False
+        )
+
+        # Subsample exp_df and kernels using the sampled indices
+        sampled_exp_df = exp_df.iloc[sampled_indices].reset_index(drop=True)
+        sampled_kernels = [kernels[idx] for idx in sampled_indices]
+
+        coords_stacked = np.vstack(sampled_exp_df.Coordinates.values)
         shuffled_coords = []
-        for exp in np.arange(exp_df.shape[0]):
-            K = exp_df.loc[exp, "NumberOfFoci"]
+
+        for exp in range(len(sampled_exp_df)):
+            K = sampled_exp_df.iloc[exp]["NumberOfFoci"]
             # Step 1: Randomly sample K unique row indices
             sample_indices = np.random.choice(
                 coords_stacked.shape[0], size=K, replace=False
@@ -232,23 +290,42 @@ def compute_permute_clustering(
             # Step 3: Delete the sampled rows from the original array
             coords_stacked = np.delete(coords_stacked, sample_indices, axis=0)
 
-        null_ma = compute_ma(shuffled_coords, kernels)
+        # Compute the meta-analysis result with subsampled kernels
+        null_ma = compute_ma(shuffled_coords, sampled_kernels)
         ma_gm_masked = null_ma[:, GM_PRIOR]
         correlation_matrix, _ = spearmanr(ma_gm_masked, axis=1)
         correlation_matrix = np.nan_to_num(
             correlation_matrix, nan=0, posinf=0, neginf=0
         )
         correlation_distance = 1 - correlation_matrix
-        condensed_distance = squareform(correlation_distance, checks=False)
-        Z = linkage(condensed_distance, method="average")
+
+        if clustering_method == "hierarchical":
+            condensed_distance = squareform(correlation_distance, checks=False)
+            Z = linkage(condensed_distance, method=linkage_method)
+        elif clustering_method == "kmeans":
+            pass  # No preprocessing needed for K-Means
 
         for k in range(2, max_clusters + 1):
-            # Step 5: Extract clusters for k clusters
-            cluster_labels = fcluster(Z, k, criterion="maxclust")
+            if clustering_method == "hierarchical":
+                # Step 5: Extract clusters for k clusters
+                cluster_labels = fcluster(Z, k, criterion="maxclust")
+            elif clustering_method == "kmeans":
+                kmeans = KMeans(n_clusters=k, random_state=n).fit(correlation_matrix)
+                cluster_labels = kmeans.labels_
+            else:
+                raise ValueError(
+                    "Invalid clustering_method. Choose 'hierarchical' or 'kmeans'."
+                )
 
             # Silhouette Score
             silhouette_avg = silhouette_score(
-                correlation_distance, cluster_labels, metric="precomputed"
+                correlation_distance
+                if clustering_method == "hierarchical"
+                else correlation_matrix,
+                cluster_labels,
+                metric="precomputed"
+                if clustering_method == "hierarchical"
+                else "euclidean",
             )
             null_silhouette_scores[k - 2, n] = silhouette_avg
 
@@ -258,13 +335,15 @@ def compute_permute_clustering(
             )
             null_calinski_harabasz_scores[k - 2, n] = calinski_harabasz_avg
 
+    # Save results
     np.save(
-        project_path / f"Results/MA_Clustering/{meta_name}_null_silhouette_scores.npy",
+        project_path
+        / f"Results/MA_Clustering/tmp/{meta_name}_null_silhouette_scores_{correlation_type}_{clustering_method}_{linkage_method}.npy",
         null_silhouette_scores,
     )
     np.save(
         project_path
-        / f"Results/MA_Clustering/{meta_name}_null_calinski_harabasz_scores.npy",
+        / f"Results/MA_Clustering/tmp/{meta_name}_null_calinski_harabasz_scores_{correlation_type}_{clustering_method}_{linkage_method}.npy",
         null_calinski_harabasz_scores,
     )
 
@@ -302,25 +381,22 @@ def compute_metrics_z(
     null_silhouette_scores,
     null_calinski_harabasz_scores,
 ):
-    silhouette_scores_avg = np.average(silhouette_scores, axis=1)
-    calinski_harabasz_scores_avg = np.average(calinski_harabasz_scores, axis=1)
-
     null_silhouette_scores_avg = np.average(null_silhouette_scores, axis=1)
     null_calinski_harabasz_scores_avg = np.average(
         null_calinski_harabasz_scores, axis=1
     )
 
-    silhouette_z = (silhouette_scores_avg - null_silhouette_scores_avg) / np.std(
+    silhouette_z = (silhouette_scores - null_silhouette_scores_avg) / np.std(
         null_silhouette_scores
     )
     alinski_harabasz_z = (
-        calinski_harabasz_scores_avg - null_calinski_harabasz_scores_avg
+        calinski_harabasz_scores - null_calinski_harabasz_scores_avg
     ) / np.std(null_calinski_harabasz_scores)
 
     return silhouette_z, alinski_harabasz_z
 
 
-def plot_cor_matrix(project_path, correlation_matrix, linkage_method="average"):
+def plot_cor_matrix(project_path, correlation_matrix, correlation_type, linkage_method):
     # Perform hierarchical clustering
     linkage_matrix = linkage(correlation_matrix, method=linkage_method)
 
@@ -339,7 +415,10 @@ def plot_cor_matrix(project_path, correlation_matrix, linkage_method="average"):
     plt.ylabel("Experiments")
     plt.yticks(ticks=[])
 
-    plt.savefig(project_path / "Results/MA_Clustering/correlation_matrix.png")
+    plt.savefig(
+        project_path
+        / f"Results/MA_Clustering/correlation_matrix_{correlation_type}_{linkage_method}.png"
+    )
 
 
 def plot_clustering_metrics(
@@ -347,7 +426,10 @@ def plot_clustering_metrics(
     silhouette_scores_z,
     calinski_harabasz_scores_z,
     adjusted_rand_index,
-    variation_of_info,
+    variation_of_information,
+    correlation_type,
+    clustering_method,
+    linkage_method,
 ):
     plt.figure(figsize=(12, 8))
 
@@ -356,7 +438,10 @@ def plot_clustering_metrics(
     plt.plot(silhouette_scores_z, marker="o")
     plt.title("Silhouette Scores Z")
     plt.xlabel("Number of Clusters")
-    plt.xticks(ticks=range(len(silhouette_scores_z)), labels=range(2, 11))
+    plt.xticks(
+        ticks=range(len(silhouette_scores_z)),
+        labels=range(2, len(silhouette_scores_z) + 2),
+    )
     plt.ylabel("Z-Score")
     plt.grid()
 
@@ -365,7 +450,10 @@ def plot_clustering_metrics(
     plt.plot(calinski_harabasz_scores_z, marker="o")
     plt.title("Calinski-Harabasz Scores Z")
     plt.xlabel("Number of Clusters")
-    plt.xticks(ticks=range(len(calinski_harabasz_scores_z)), labels=range(2, 11))
+    plt.xticks(
+        ticks=range(len(calinski_harabasz_scores_z)),
+        labels=range(2, len(calinski_harabasz_scores_z) + 2),
+    )
     plt.ylabel("Z-Score")
     plt.grid()
 
@@ -374,22 +462,30 @@ def plot_clustering_metrics(
     plt.plot(adjusted_rand_index, marker="o")
     plt.title("Adjusted Rand Index")
     plt.xlabel("Number of Clusters")
-    plt.xticks(ticks=range(len(adjusted_rand_index)), labels=range(2, 11))
+    plt.xticks(
+        ticks=range(len(adjusted_rand_index)),
+        labels=range(2, len(adjusted_rand_index) + 2),
+    )
     plt.ylabel("aRI-Score")
     plt.grid()
 
     # Plot Variation of Information
     plt.subplot(4, 1, 4)
-    plt.plot(variation_of_info, marker="o")
+    plt.plot(variation_of_information, marker="o")
     plt.title("Variation of Information")
     plt.xlabel("Number of Clusters")
-    plt.xticks(ticks=range(len(variation_of_info)), labels=range(2, 11))
+    plt.xticks(
+        ticks=range(len(variation_of_information)),
+        labels=range(2, len(variation_of_information) + 2),
+    )
     plt.ylabel("VI-Score")
     plt.grid()
 
     plt.tight_layout()
-    plt.savefig(project_path / "Results/MA_Clustering/clustering_metrics.png")
-    plt.show()
+    plt.savefig(
+        project_path
+        / f"Results/MA_Clustering/clustering_metrics_{correlation_type}_{clustering_method}_{linkage_method}.png"
+    )
 
 
 def save_clustering_metrics(
@@ -399,19 +495,64 @@ def save_clustering_metrics(
     calinski_harabasz_scores,
     calinski_harabasz_scores_z,
     adjusted_rand_index,
-    variation_of_info,
+    variation_of_information,
+    correlation_type,
+    clustering_method,
+    linkage_method,
 ):
     metrics_df = pd.DataFrame(
         {
-            "Number of Clusters": range(2, 11),
+            "Number of Clusters": range(2, len(silhouette_scores) + 2),
             "Silhouette Scores": silhouette_scores,
             "Silhouette Scores Z": silhouette_scores_z,
             "Calinski-Harabasz Scores": calinski_harabasz_scores,
             "Calinski-Harabasz Scores Z": calinski_harabasz_scores_z,
             "Adjusted Rand Index": adjusted_rand_index,
-            "Variation of Information": variation_of_info,
+            "Variation of Information": variation_of_information,
         }
     )
     metrics_df.to_csv(
-        project_path / "Results/MA_Clustering/clustering_metrics.csv", index=False
+        project_path
+        / f"Results/MA_Clustering/clustering_metrics_{correlation_type}_{clustering_method}_{linkage_method}.csv",
+        index=False,
+    )
+
+
+def plot_sorted_dendrogram(
+    project_path,
+    linkage_matrix,
+    distance_matrix,
+    correlation_type,
+    clustering_method,
+    linkage_method,
+    k,
+):
+    """
+    Creates a dendrogram with optimal leaf ordering for better interpretability.
+
+    Parameters:
+        linkage_matrix (ndarray): The linkage matrix from hierarchical clustering.
+        data (ndarray): Original data used to compute the distance matrix.
+
+    Returns:
+        dict: The dendrogram structure.
+    """
+    # Apply optimal leaf ordering to the linkage matrix
+    ordered_linkage_matrix = optimal_leaf_ordering(linkage_matrix, distance_matrix)
+
+    # Plot the dendrogram
+    plt.figure(figsize=(10, 6))
+    dendro = dendrogram(
+        ordered_linkage_matrix,
+        leaf_rotation=90,
+        leaf_font_size=10,
+        color_threshold=linkage_matrix[-(k - 1), 2],  # Highlight k-clusters
+    )
+    plt.title("Optimal Leaf Ordered Dendrogram")
+    plt.xlabel("Samples")
+    plt.ylabel("Distance")
+
+    plt.savefig(
+        project_path
+        / f"Results/MA_Clustering/dendograms/dendogram_{correlation_type}_{clustering_method}_{linkage_method}_{k}.png",
     )

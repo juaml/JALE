@@ -57,7 +57,8 @@ def folder_setup(path, type_of_analysis):
             "Results/BalancedContrast/Figures",
         ],
         "MA_Clustering": [
-            "Results/MA_Clustering",
+            "Results/MA_Clustering/tmp",
+            "Results/MA_Clustering/dendograms",
         ],
         "ROI": [
             "Results/MainEffect/ROI",
