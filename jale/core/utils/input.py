@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from jale.core.utils.compile_experiments import compile_experiments
 from jale.core.utils.tal2icbm_spm import tal2icbm_spm
 from jale.core.utils.template import MNI_AFFINE
 
@@ -153,7 +154,7 @@ def check_coordinates_are_numbers(df):
         return df.reset_index(drop=True)
 
 
-def concat_coordinates(exp_info):
+def concat_coordinates(exp_info, pool_experiments):
     """
     Concatenate coordinate columns into arrays grouped by article + tag.
 
@@ -174,18 +175,20 @@ def concat_coordinates(exp_info):
 
     # logic for excel files where each line features information in every cell (old structure)
     if exp_info["Articles"].isna().sum() == 0:
+        if pool_experiments:
+            grouping_columns = ["Articles"]
+        else:
+            grouping_columns = ["Articles", "Tags"]
         # Group by 'Articles' and consolidate coordinates into lists
-        exp_info_firstlines = (
-            exp_info.groupby(["Articles", "Tags"]).first().reset_index()
-        )
+        exp_info_firstlines = exp_info.groupby(grouping_columns).first().reset_index()
         exp_info_firstlines["x"] = (
-            exp_info.groupby(["Articles", "Tags"])["x"].apply(list).values
+            exp_info.groupby(grouping_columns)["x"].apply(list).values
         )
         exp_info_firstlines["y"] = (
-            exp_info.groupby(["Articles", "Tags"])["y"].apply(list).values
+            exp_info.groupby(grouping_columns)["y"].apply(list).values
         )
         exp_info_firstlines["z"] = (
-            exp_info.groupby(["Articles", "Tags"])["z"].apply(list).values
+            exp_info.groupby(grouping_columns)["z"].apply(list).values
         )
 
         # Create an array of coordinates and assign it to 'Coordinates_mm'
@@ -392,7 +395,7 @@ def create_tasks_table(exp_info):
     return tasks
 
 
-def read_experiment_info(filename):
+def read_experiment_info(filename, pool_experiments):
     """
     Load and process experimental data from an Excel file, creating a summary of tasks.
 
@@ -419,7 +422,7 @@ def read_experiment_info(filename):
     exp_info = concat_tags(exp_info)
 
     # Concatenate coordinates for each article and convert coordinate spaces if needed
-    exp_info = concat_coordinates(exp_info)
+    exp_info = concat_coordinates(exp_info, pool_experiments)
     exp_info = convert_tal_2_mni(exp_info)
 
     # Transform MNI coordinates to voxel space and filter relevant columns
@@ -448,7 +451,72 @@ def read_experiment_info(filename):
 def load_dataframes(project_path, config):
     """Load experiment info and analysis dataframes."""
     exp_all_df, tasks = read_experiment_info(
-        project_path / config["project"]["experiment_info"]
+        project_path / config["project"]["experiment_info"],
+        config["parameters"]["pool_experiments"],
     )
     analysis_df = load_analysis_excel(project_path / config["project"]["analysis_info"])
     return exp_all_df, tasks, analysis_df
+
+
+def setup_contrast_data(analysis_df, row_idx, exp_all_df, tasks):
+    """
+    Prepare experiment data for contrast analysis.
+
+    Parameters
+    ----------
+    analysis_df : pandas.DataFrame
+        DataFrame containing analysis information, including meta-analysis names
+        and conditions for experiment selection.
+    row_idx : int
+        Index of the current row in the analysis dataframe from which to start
+        extracting meta-analysis data.
+    exp_all_df : pandas.DataFrame
+        DataFrame containing all available experimental data.
+    tasks : pandas.DataFrame
+        DataFrame containing task information used for compiling experiments.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - list of str: Names of the meta-analyses for the selected rows.
+        - list of pandas.DataFrame: DataFrames for the experiments corresponding
+          to each meta-analysis.
+    """
+    meta_names = [analysis_df.iloc[row_idx, 1], analysis_df.iloc[row_idx + 1, 1]]
+    conditions = [
+        analysis_df.iloc[row_idx, 2:].dropna().to_list(),
+        analysis_df.iloc[row_idx + 1, 2:].dropna().to_list(),
+    ]
+    exp_idxs1, _, _ = compile_experiments(conditions[0], tasks)
+    exp_idxs2, _, _ = compile_experiments(conditions[1], tasks)
+
+    exp_idxs = [exp_idxs1, exp_idxs2]
+
+    exp_dfs = [
+        exp_all_df.loc[exp_idxs1].reset_index(drop=True),
+        exp_all_df.loc[exp_idxs2].reset_index(drop=True),
+    ]
+    return meta_names, exp_dfs, exp_idxs
+
+
+def determine_target_n(row_value, exp_dfs):
+    """
+    Determine the target number of subsamples for analysis.
+
+    Parameters
+    ----------
+    row_value : str
+        A string value from the analysis dataframe indicating the target subsample size.
+    exp_dfs : list of pandas.DataFrame
+        List of DataFrames containing experiment data for different meta-analyses.
+
+    Returns
+    -------
+    int
+        The calculated target number of subsamples.
+    """
+    if len(row_value) > 1:
+        return int(row_value[1:])
+    n = [len(exp_dfs[0]), len(exp_dfs[1])]
+    return int(min(np.floor(np.mean((np.min(n), 17))), np.min(n) - 2))

@@ -9,7 +9,7 @@ from scipy.cluster.hierarchy import (
     linkage,
     optimal_leaf_ordering,
 )
-from scipy.spatial.distance import squareform
+from scipy.spatial.distance import pdist, squareform
 from scipy.stats import pearsonr, spearmanr
 from sklearn.cluster import KMeans
 from sklearn.metrics import (
@@ -63,6 +63,7 @@ def clustering(
         calinski_harabasz_scores,
         adjusted_rand_index,
         variation_of_information,
+        hamming_distance,
     ) = compute_clustering(
         meta_name,
         project_path,
@@ -134,7 +135,6 @@ def compute_clustering(
     # Convert correlation matrix to correlation distance (1 - r)
     correlation_distance = 1 - correlation_matrix
     np.fill_diagonal(correlation_distance, 0)
-    condensed_distance = squareform(correlation_distance, checks=False)
 
     silhouette_scores = np.empty((max_clusters - 1, sampling_iterations))
     calinski_harabasz_scores = np.empty((max_clusters - 1, sampling_iterations))
@@ -143,6 +143,9 @@ def compute_clustering(
 
     # Iterate over different values of k, compute cluster metrics
     for k in range(2, max_clusters + 1):
+        tmp_hamming_distance = np.zeros(
+            (correlation_matrix.shape[0], sampling_iterations)
+        )
         for i in range(sampling_iterations):
             # Resample indices for subsampling
             resampled_indices = resample(
@@ -177,6 +180,8 @@ def compute_clustering(
                     "Invalid clustering_method. Choose 'hierarchical' or 'kmeans'."
                 )
 
+            tmp_hamming_distance[resampled_indices, i] = cluster_labels
+
             # Silhouette Score
             silhouette_avg = silhouette_score(
                 resampled_correlation
@@ -205,10 +210,21 @@ def compute_clustering(
             vi_score = compute_variation_of_information(cluster_labels, vof_labels)
             variation_of_information[k - 2, i] = vi_score
 
+        hamming_distance = pdist(tmp_hamming_distance, metric="hamming")
+
+        linkage_matrix, cluster_labels = compute_cmhc_cluster_labels(
+            project_path,
+            hamming_distance,
+            correlation_type,
+            clustering_method,
+            linkage_method,
+            k,
+        )
+
         plot_sorted_dendrogram(
             project_path,
-            linkage_matrix=linkage(correlation_matrix, method=linkage_method),
-            distance_matrix=condensed_distance,
+            linkage_matrix=linkage_matrix,
+            distance_matrix=hamming_distance,
             correlation_type=correlation_type,
             clustering_method=clustering_method,
             linkage_method=linkage_method,
@@ -247,6 +263,7 @@ def compute_clustering(
         calinski_harabasz_scores,
         adjusted_rand_index,
         variation_of_information,
+        hamming_distance,
     )
 
 
@@ -518,6 +535,28 @@ def save_clustering_metrics(
     )
 
 
+def compute_cmhc_cluster_labels(
+    project_path,
+    hamming_distance,
+    correlation_type,
+    clustering_method,
+    linkage_method,
+    k,
+):
+    linkage_matrix = linkage(hamming_distance, method=linkage_method)
+    cluster_labels = fcluster(linkage_matrix, t=k, criterion="maxclust")
+
+    # Save cluster labels
+    np.savetxt(
+        project_path
+        / f"Results/MA_Clustering/labels/cluster_labels_{correlation_type}_{clustering_method}_{linkage_method}_{k}.txt",
+        cluster_labels.astype(int),
+        fmt="%d",
+    )
+
+    return linkage_matrix, cluster_labels
+
+
 def plot_sorted_dendrogram(
     project_path,
     linkage_matrix,
@@ -549,8 +588,9 @@ def plot_sorted_dendrogram(
         color_threshold=linkage_matrix[-(k - 1), 2],  # Highlight k-clusters
     )
     plt.title("Optimal Leaf Ordered Dendrogram")
-    plt.xlabel("Samples")
+    plt.xlabel("Experiments")
     plt.ylabel("Distance")
+    plt.xticks([])
 
     plt.savefig(
         project_path

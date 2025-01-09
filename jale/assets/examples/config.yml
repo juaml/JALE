@@ -10,9 +10,11 @@ project:
 # DO NOT CHANGE THESE IF YOU ARE NOT AN ALE EXPERT!
 parameters:
   # TFCE is a method for multiple comparison correction (Frahm et al., 2022)
-  tfce_enabled: False
+  tfce_enabled: True
   # If enabled uses xgboost models to predict cutoffs instead of monte carlo simulation (Frahm et al., 2024)
   cutoff_predict_enabled: True
+  # If enabled pools multiple experiments from same paper into one experiment; Default: False
+  pool_experiments: False
   # if enabled ALE map (and therefore all following maps) will be masked by ICBM 10% GM mask
   gm_masking: True
   # Size of bins used in MA histogram
@@ -40,5 +42,8 @@ clustering_parameters:
   subsample_fraction: 0.9 # Default: 0.9
   sampling_iterations: 1000 # Default: 1000
   null_iterations: 1000 # Default: 1000
+  correlation_type: "spearman" # Default: "spearman"; Options: "spearman", "pearson"
+  clustering_method: "hierarchical" # Default: "hierarchical"; Options: "hierarchical", "k-means"
+  linkage_method: "complete" # Default: "complete"; Options: "complete", "average"
   nprocesses: 2 # Default: 2
 # DO NOT CHANGE THESE IF YOU ARE NOT AN ALE EXPERT

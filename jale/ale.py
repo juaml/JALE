@@ -1,8 +1,6 @@
 import logging
 from pathlib import Path
 
-import numpy as np
-
 from jale.core.analyses.balanced_contrast import balanced_contrast
 from jale.core.analyses.clustering import clustering
 from jale.core.analyses.contrast import contrast
@@ -11,8 +9,57 @@ from jale.core.analyses.probabilistic import probabilistic_ale
 from jale.core.analyses.roi import roi_ale
 from jale.core.utils.compile_experiments import compile_experiments
 from jale.core.utils.contribution import contribution
-from jale.core.utils.input import load_config, load_dataframes
+from jale.core.utils.input import (
+    determine_target_n,
+    load_config,
+    load_dataframes,
+    setup_contrast_data,
+)
 from jale.core.utils.logger import setup_logger
+
+
+def run_ale(yaml_path=None):
+    # Load config and set up paths
+    config = load_config(yaml_path)
+    project_path = Path(yaml_path).parent
+    # Create a logs folder (common across all analysis types)
+    (project_path / "logs").mkdir(parents=True, exist_ok=True)
+    # Initialize the logger
+    logger = setup_logger(project_path)
+    logger.info("Logger initialized and project setup complete.")
+
+    params = config.get("parameters", {})
+    clustering_params = config.get("clustering_parameters", {})
+    exp_all_df, tasks, analysis_df = load_dataframes(project_path, config)
+
+    # Main loop to process each row in the analysis dataframe
+    for row_idx in range(analysis_df.shape[0]):
+        # skip empty rows - indicate 2nd effect for contrast analysis
+        if not isinstance(analysis_df.iloc[row_idx, 0], str):
+            continue
+
+        if analysis_df.iloc[row_idx, 0] == "M":
+            run_main_effect(
+                analysis_df, row_idx, project_path, params, exp_all_df, tasks
+            )
+        elif analysis_df.iloc[row_idx, 0][0] == "P":
+            run_probabilistic_ale(
+                analysis_df, row_idx, project_path, params, exp_all_df, tasks
+            )
+        elif analysis_df.iloc[row_idx, 0] == "C":
+            run_contrast_analysis(
+                analysis_df, row_idx, project_path, params, exp_all_df, tasks
+            )
+        elif analysis_df.iloc[row_idx, 0][0] == "B":
+            run_balanced_contrast(
+                analysis_df, row_idx, project_path, params, exp_all_df, tasks
+            )
+        elif analysis_df.iloc[row_idx, 0] == "Cluster":
+            run_ma_clustering(
+                analysis_df, row_idx, project_path, clustering_params, exp_all_df, tasks
+            )
+
+    logger.info("Analysis completed.")
 
 
 def run_main_effect(analysis_df, row_idx, project_path, params, exp_all_df, tasks):
@@ -281,70 +328,6 @@ def run_balanced_contrast(
     )
 
 
-def setup_contrast_data(analysis_df, row_idx, exp_all_df, tasks):
-    """
-    Prepare experiment data for contrast analysis.
-
-    Parameters
-    ----------
-    analysis_df : pandas.DataFrame
-        DataFrame containing analysis information, including meta-analysis names
-        and conditions for experiment selection.
-    row_idx : int
-        Index of the current row in the analysis dataframe from which to start
-        extracting meta-analysis data.
-    exp_all_df : pandas.DataFrame
-        DataFrame containing all available experimental data.
-    tasks : pandas.DataFrame
-        DataFrame containing task information used for compiling experiments.
-
-    Returns
-    -------
-    tuple
-        A tuple containing:
-        - list of str: Names of the meta-analyses for the selected rows.
-        - list of pandas.DataFrame: DataFrames for the experiments corresponding
-          to each meta-analysis.
-    """
-    meta_names = [analysis_df.iloc[row_idx, 1], analysis_df.iloc[row_idx + 1, 1]]
-    conditions = [
-        analysis_df.iloc[row_idx, 2:].dropna().to_list(),
-        analysis_df.iloc[row_idx + 1, 2:].dropna().to_list(),
-    ]
-    exp_idxs1, _, _ = compile_experiments(conditions[0], tasks)
-    exp_idxs2, _, _ = compile_experiments(conditions[1], tasks)
-
-    exp_idxs = [exp_idxs1, exp_idxs2]
-
-    exp_dfs = [
-        exp_all_df.loc[exp_idxs1].reset_index(drop=True),
-        exp_all_df.loc[exp_idxs2].reset_index(drop=True),
-    ]
-    return meta_names, exp_dfs, exp_idxs
-
-
-def determine_target_n(row_value, exp_dfs):
-    """
-    Determine the target number of subsamples for analysis.
-
-    Parameters
-    ----------
-    row_value : str
-        A string value from the analysis dataframe indicating the target subsample size.
-    exp_dfs : list of pandas.DataFrame
-        List of DataFrames containing experiment data for different meta-analyses.
-
-    Returns
-    -------
-    int
-        The calculated target number of subsamples.
-    """
-    if len(row_value) > 1:
-        return int(row_value[1:])
-    n = [len(exp_dfs[0]), len(exp_dfs[1])]
-    return int(min(np.floor(np.mean((np.min(n), 17))), np.min(n) - 2))
-
-
 def run_ma_clustering(analysis_df, row_idx, project_path, params, exp_all_df, tasks):
     logger = logging.getLogger("ale_logger")
     logger.info("Running MA Clustering")
@@ -370,47 +353,3 @@ def run_ma_clustering(analysis_df, row_idx, project_path, params, exp_all_df, ta
         sampling_iterations=params["sampling_iterations"],
         null_iterations=params["null_iterations"],
     )
-
-
-def run_ale(yaml_path=None):
-    # Load config and set up paths
-    config = load_config(yaml_path)
-    project_path = Path(yaml_path).parent
-    # Create a logs folder (common across all analysis types)
-    (project_path / "logs").mkdir(parents=True, exist_ok=True)
-    # Initialize the logger
-    logger = setup_logger(project_path)
-    logger.info("Logger initialized and project setup complete.")
-
-    params = config.get("parameters", {})
-    clustering_params = config.get("clustering_parameters", {})
-    exp_all_df, tasks, analysis_df = load_dataframes(project_path, config)
-
-    # Main loop to process each row in the analysis dataframe
-    for row_idx in range(analysis_df.shape[0]):
-        # skip empty rows - indicate 2nd effect for contrast analysis
-        if not isinstance(analysis_df.iloc[row_idx, 0], str):
-            continue
-
-        if analysis_df.iloc[row_idx, 0] == "M":
-            run_main_effect(
-                analysis_df, row_idx, project_path, params, exp_all_df, tasks
-            )
-        elif analysis_df.iloc[row_idx, 0][0] == "P":
-            run_probabilistic_ale(
-                analysis_df, row_idx, project_path, params, exp_all_df, tasks
-            )
-        elif analysis_df.iloc[row_idx, 0] == "C":
-            run_contrast_analysis(
-                analysis_df, row_idx, project_path, params, exp_all_df, tasks
-            )
-        elif analysis_df.iloc[row_idx, 0][0] == "B":
-            run_balanced_contrast(
-                analysis_df, row_idx, project_path, params, exp_all_df, tasks
-            )
-        elif analysis_df.iloc[row_idx, 0] == "Cluster":
-            run_ma_clustering(
-                analysis_df, row_idx, project_path, clustering_params, exp_all_df, tasks
-            )
-
-    logger.info("Analysis completed.")

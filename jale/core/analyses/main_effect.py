@@ -133,7 +133,7 @@ def main_effect(
     else:
         logger.info(f"{meta_name} - computing ALE and null PDF")
         ale = compute_ale(ma)
-        if gm_masking == "True":
+        if gm_masking is True:
             ale[GM_PRIOR == 0] = 0
         plot_and_save(project_path, f"{meta_name}_ale", ale)
 
