@@ -23,6 +23,7 @@ def balanced_contrast(
     exp_dfs,
     meta_names,
     target_n,
+    correction_method="cFWE",
     difference_iterations=1000,
     monte_carlo_iterations=1000,
     nprocesses=2,

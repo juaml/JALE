@@ -258,6 +258,7 @@ def run_contrast_analysis(
     contrast(
         project_path,
         meta_names,
+        correction_method=params["contrast_correction_method"],
         significance_threshold=params["significance_threshold"],
         null_repeats=params["contrast_permutations"],
         nprocesses=params["nprocesses"],
@@ -329,6 +330,29 @@ def run_balanced_contrast(
 
 
 def run_ma_clustering(analysis_df, row_idx, project_path, params, exp_all_df, tasks):
+    """
+    Run a meta-analysis clustering (MA-Clustering) analysis based on the analysis dataframe and experiment info.
+
+    Parameters
+    ----------
+    analysis_df : pandas.DataFrame
+        DataFrame containing the analysis information, including meta-analysis names and conditions for experiment selection.
+    row_idx : int
+        Index of the current row in the analysis dataframe.
+    project_path : str or Path
+        Path to the project directory where results are saved.
+    params : dict
+        Dictionary of parameters for analysis, including clustering method, correlation type, linkage method, max clusters, subsample fraction, sampling iterations and null iterations.
+    exp_all_df : pandas.DataFrame
+        DataFrame containing all available experimental data.
+    tasks : pandas.DataFrame
+        DataFrame containing task information used for compiling experiments.
+
+    Returns
+    -------
+    None
+        The function performs computations and saves the results.
+    """
     logger = logging.getLogger("ale_logger")
     logger.info("Running MA Clustering")
 
@@ -342,9 +366,9 @@ def run_ma_clustering(analysis_df, row_idx, project_path, params, exp_all_df, ta
     )
 
     clustering(
-        project_path,
-        exp_df,
-        meta_name,
+        project_path=project_path,
+        exp_df=exp_df,
+        meta_name=meta_name,
         correlation_type=params["correlation_type"],
         clustering_method=params["clustering_method"],
         linkage_method=params["linkage_method"],

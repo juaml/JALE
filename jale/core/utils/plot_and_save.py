@@ -2,7 +2,7 @@ import nibabel as nb
 import numpy as np
 from nilearn import plotting
 
-from jale.core.utils.template import GM_PRIOR, MNI_AFFINE
+from jale.core.utils.template import MNI_AFFINE
 
 
 def plot_and_save(project_path, analysis_name, arr):

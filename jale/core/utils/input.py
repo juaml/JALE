@@ -1,5 +1,6 @@
 import logging
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -25,36 +26,40 @@ def load_config(yaml_path):
         sys.exit(1)
 
 
-def load_experiment_excel(filepath):
+def load_experiment_file(filepath):
     """
-    Load an Excel file and perform basic processing based on the specified type.
+    Load an Excel or CSV file and perform basic processing based on the specified type.
 
-    Depending on the file type, this function reads an Excel file, assigns headers,
+    This function reads a file (either Excel or CSV), assigns headers,
     handles missing values, and sets specific column names for 'experiment' data.
 
     Parameters
     ----------
     filepath : str or Path
-        Path to the Excel file to be loaded.
-    type : str, optional
-        Type of the Excel file, either "analysis" or "experiment".
-        Defaults to "analysis".
+        Path to the file to be loaded.
 
     Returns
     -------
     pandas.DataFrame
         DataFrame with the loaded and processed data.
     """
-    # Attempt to load the Excel file and handle errors if they occur
+    # Convert filepath to Path object if it's a string
+    filepath = Path(filepath)
+
+    # Check the file extension to determine the loading method
     try:
-        df = pd.read_excel(filepath, header=0)
+        if filepath.suffix.lower() in [".xlsx", ".xls"]:
+            df = pd.read_excel(filepath, header=0)
+        elif filepath.suffix.lower() == ".csv":
+            df = pd.read_csv(filepath, header=0)
+        else:
+            logger.error(f"Unsupported file format: {filepath.suffix}")
+            sys.exit()
     except FileNotFoundError:
         logger.error(f"File '{filepath}' not found.")
         sys.exit()
     except ValueError:
-        logger.error(
-            f"Error reading Excel file '{filepath}'. Make sure it's a valid Excel file."
-        )
+        logger.error(f"Error reading file '{filepath}'. Make sure it's a valid file.")
         sys.exit()
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
@@ -63,7 +68,7 @@ def load_experiment_excel(filepath):
     # Drop any rows that are completely empty
     df.dropna(inplace=True, how="all")
 
-    # Check for rows with only one non-NaN entry
+    # Check for rows with only one or two non-NaN entries
     mistake_rows = df[(df.notna().sum(axis=1) == 1) | (df.notna().sum(axis=1) == 2)]
     if not mistake_rows.empty:
         row_indices = mistake_rows.index.tolist()
@@ -90,16 +95,40 @@ def load_experiment_excel(filepath):
     return df
 
 
-def load_analysis_excel(filepath):
+def load_analysis_file(filepath):
+    """
+    Load an Excel or CSV file for analysis.
+
+    This function reads a file (either Excel or CSV), handles missing values,
+    and prepares the data for further analysis.
+
+    Parameters
+    ----------
+    filepath : str or Path
+        Path to the file to be loaded.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with the loaded and processed data.
+    """
+    # Convert filepath to Path object if it's a string
+    filepath = Path(filepath)
+
+    # Check the file extension to determine the loading method
     try:
-        df = pd.read_excel(filepath, header=None)
+        if filepath.suffix.lower() in [".xlsx", ".xls"]:
+            df = pd.read_excel(filepath, header=None)
+        elif filepath.suffix.lower() == ".csv":
+            df = pd.read_csv(filepath, header=None)
+        else:
+            logger.error(f"Unsupported file format: {filepath.suffix}")
+            sys.exit()
     except FileNotFoundError:
         logger.error(f"File '{filepath}' not found.")
         sys.exit()
     except ValueError:
-        logger.error(
-            f"Error reading Excel file '{filepath}'. Make sure it's a valid Excel file."
-        )
+        logger.error(f"Error reading file '{filepath}'. Make sure it's a valid file.")
         sys.exit()
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
@@ -415,7 +444,7 @@ def read_experiment_info(filename, pool_experiments):
         - pandas.DataFrame : Summary of tasks.
     """
     # Load the experimental data from the Excel file
-    exp_info = load_experiment_excel(filepath=filename)
+    exp_info = load_experiment_file(filepath=filename)
 
     # Verify coordinates are numeric and concatenate tag information
     exp_info = check_coordinates_are_numbers(exp_info)
@@ -454,7 +483,7 @@ def load_dataframes(project_path, config):
         project_path / config["project"]["experiment_info"],
         config["parameters"]["pool_experiments"],
     )
-    analysis_df = load_analysis_excel(project_path / config["project"]["analysis_info"])
+    analysis_df = load_analysis_file(project_path / config["project"]["analysis_info"])
     return exp_all_df, tasks, analysis_df
 
 

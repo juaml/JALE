@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="jale",  # Unique name for your package
-    version="0.1.34",  # Version number
+    version="0.1.35",  # Version number
     description="Package allowing users to run Activation Likelihood Estimation Meta-Analysis",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -21,7 +21,7 @@ setup(
         "scipy>=1.10.1",
         "xgboost>=2.1.2",
         "openpyxl>=3.1.5",
-        "scikit-learn-extra>=0.3.0",
+        "scikit-learn==1.5.2",
         "matplotlib>=3.7.1",
         "seaborn>=0.12.2",
         "nilearn>=0.10.4",

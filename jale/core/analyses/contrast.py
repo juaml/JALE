@@ -20,7 +20,8 @@ logger = logging.getLogger("ale_logger")
 def contrast(
     project_path,
     meta_names,
-    significance_threshold=0.0,
+    correction_method="cFWE",
+    significance_threshold=0.05,
     null_repeats=10000,
     nprocesses=2,
 ):
@@ -71,12 +72,12 @@ def contrast(
     ).exists():
         logger.info(
             f"{meta_names[0]} x {meta_names[1]} - contrast already computed. Skipping."
-        )  # noqa
+        )
     else:
-        logger.info(f"{meta_names[0]} x {meta_names[1]} - Computing positive contrast.")  # noqa
+        logger.info(f"{meta_names[0]} x {meta_names[1]} - Computing positive contrast.")
         main_effect1 = nb.loadsave.load(
-            project_path / f"MainEffect/Volumes/{meta_names[0]}_cFWE.nii"
-        ).get_fdata()  # type: ignore
+            project_path / f"MainEffect/Volumes/{meta_names[0]}_{correction_method}.nii"
+        ).get_fdata()
         significance_mask1 = main_effect1 > 0
         if significance_mask1.sum() > 0:
             stacked_masked_ma = np.vstack(
@@ -102,7 +103,7 @@ def contrast(
 
         logger.info(f"{meta_names[1]} x {meta_names[0]} - Computing negative contrast.")
         main_effect2 = nb.loadsave.load(
-            project_path / f"MainEffect/Volumes/{meta_names[1]}_cFWE.nii"
+            project_path / f"MainEffect/Volumes/{meta_names[1]}_{correction_method}.nii"
         ).get_fdata()  # type: ignore
         significance_mask2 = main_effect2 > 0
         if significance_mask2.sum() > 0:
