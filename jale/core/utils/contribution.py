@@ -38,7 +38,7 @@ def contribution(
     ma = compute_ma(exp_df.Coordinates, kernels)
 
     # Determine the correction methods based on `tfce_enabled` flag
-    corr_methods = ["TFCE", "vFWE", "cFWE"] if tfce_enabled else ["vFWE", "cFWE"]
+    corr_methods = ["tfce", "vFWE", "cFWE"] if tfce_enabled else ["vFWE", "cFWE"]
 
     # Loop through each correction method to analyze contributions
     for corr_method in corr_methods:
@@ -272,9 +272,9 @@ def write_experiment_contributions(txt, exp_df, contribution_arr):
                 exp_df.Articles.str.len().max() + 2
             )
             txt.write(
-                f"{article_name}\t{contribution_arr[idx,0]:.3f}\t"
-                f"{contribution_arr[idx,1]:.3f}\t{contribution_arr[idx,2]:.2f}\t"
-                f"{contribution_arr[idx,3]:.2f}\t({exp_df.Subjects[idx]})\n"
+                f"{article_name}\t{contribution_arr[idx, 0]:.3f}\t"
+                f"{contribution_arr[idx, 1]:.3f}\t{contribution_arr[idx, 2]:.2f}\t"
+                f"{contribution_arr[idx, 3]:.2f}\t({exp_df.Subjects[idx]})\n"
             )
 
 
