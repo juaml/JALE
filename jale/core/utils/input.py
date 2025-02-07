@@ -487,6 +487,61 @@ def load_dataframes(project_path, config):
     return exp_all_df, tasks, analysis_df
 
 
+def check_for_exp_independence(exp_df):
+    """
+    Check if any articles appear with multiple tags, indicating non-independent experiments.
+
+    This function checks the experiment DataFrame for any duplicate articles and warns
+    if any are found. It also provides
+    optional output listing the problematic articles and their associated tags.
+
+    Parameters
+    ----------
+    exp_df : pandas.DataFrame
+        DataFrame containing experimental data, including 'Articles' and 'Tags' columns.
+    """
+    duplicate_mask = exp_df.duplicated(subset="Articles", keep=False)
+    if duplicate_mask.any():
+        # Optionally, list the problematic articles and their associated tags
+        duplicated_articles = exp_df[duplicate_mask]
+        for article in duplicated_articles["Articles"].unique():
+            tags = duplicated_articles.loc[
+                duplicated_articles["Articles"] == article, "Tags"
+            ].unique()
+            logger.warning(f"Article '{article}' appears with multiple tags: {tags}")
+            logger.warning("Please check carefully for independence of experiments.")
+            logger.warning(
+                "If not independent please change config and set pool_experiments to 'True'."
+            )
+
+
+def check_params(params):
+    """
+    Adjust parameters based on cutoff prediction settings.
+
+    This function checks if cutoff prediction is enabled and sets default values
+    for significance threshold, cluster forming threshold, and Monte Carlo iterations
+    if it is.
+
+    Parameters
+    ----------
+    params : dict
+        Dictionary containing analysis parameters, including a boolean for cutoff
+        prediction enablement.
+
+    Returns
+    -------
+    dict
+        Updated dictionary with adjusted parameters if cutoff prediction is enabled.
+    """
+
+    if params["cutoff_predict_enabled"]:
+        params["significance_threshold"] = 0.05
+        params["cluster_forming_threshold"] = 0.001
+        params["monte_carlo_iterations"] = 5000
+    return params
+
+
 def setup_contrast_data(analysis_df, row_idx, exp_all_df, tasks):
     """
     Prepare experiment data for contrast analysis.

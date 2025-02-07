@@ -10,6 +10,8 @@ from jale.core.analyses.roi import roi_ale
 from jale.core.utils.compile_experiments import compile_experiments
 from jale.core.utils.contribution import contribution
 from jale.core.utils.input import (
+    check_for_exp_independence,
+    check_params,
     determine_target_n,
     load_config,
     load_dataframes,
@@ -29,6 +31,7 @@ def run_ale(yaml_path=None):
     logger.info("Logger initialized and project setup complete.")
 
     params = config.get("parameters", {})
+    params = check_params(params)
     clustering_params = config.get("clustering_parameters", {})
     exp_all_df, tasks, analysis_df = load_dataframes(project_path, config)
 
@@ -100,6 +103,8 @@ def run_main_effect(analysis_df, row_idx, project_path, params, exp_all_df, task
     conditions = analysis_df.iloc[row_idx, 2:].dropna().to_list()
     exp_idxs, masks, mask_names = compile_experiments(conditions, tasks)
     exp_df = exp_all_df.loc[exp_idxs].reset_index(drop=True)
+
+    check_for_exp_independence(exp_df)
 
     main_effect(
         project_path,
@@ -179,6 +184,8 @@ def run_probabilistic_ale(
     exp_idxs, _, _ = compile_experiments(conditions, tasks)
     exp_df = exp_all_df.loc[exp_idxs].reset_index(drop=True)
 
+    check_for_exp_independence(exp_df)
+
     if target_n:
         probabilistic_ale(
             project_path,
@@ -224,6 +231,9 @@ def run_contrast_analysis(
     meta_names, exp_dfs, exp_idxs = setup_contrast_data(
         analysis_df, row_idx, exp_all_df, tasks
     )
+
+    check_for_exp_independence(exp_dfs[0])
+    check_for_exp_independence(exp_dfs[1])
 
     for idx, meta_name in enumerate(meta_names):
         result_path = project_path / f"Results/MainEffect/Volumes/{meta_name}_cFWE.nii"
@@ -295,6 +305,10 @@ def run_balanced_contrast(
     meta_names, exp_dfs, exp_idxs = setup_contrast_data(
         analysis_df, row_idx, exp_all_df, tasks
     )
+
+    check_for_exp_independence(exp_dfs[0])
+    check_for_exp_independence(exp_dfs[1])
+
     target_n = determine_target_n(analysis_df.iloc[row_idx, 0], exp_dfs)
 
     # Check if subsampling ALE were already run; if not - run them
@@ -360,6 +374,8 @@ def run_ma_clustering(analysis_df, row_idx, project_path, params, exp_all_df, ta
     conditions = analysis_df.iloc[row_idx, 2:].dropna().to_list()
     exp_idxs, masks, mask_names = compile_experiments(conditions, tasks)
     exp_df = exp_all_df.loc[exp_idxs].reset_index(drop=True)
+
+    check_for_exp_independence(exp_df)
 
     logger.info(
         f"{meta_name} : {len(exp_idxs)} experiments; average of {exp_df.Subjects.mean():.2f} subjects per experiment"
