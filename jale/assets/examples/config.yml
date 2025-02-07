@@ -1,15 +1,15 @@
 # Project Folder
 project:
-  analysis_info: "file_specifying_analysis"
-  experiment_info: "file_containing_coordinates"
+  analysis_info: "analysis_info.xlsx"
+  experiment_info: "experiment_info.xlsx"
 
 
 # ALE Parameters
 # DO NOT CHANGE THESE IF YOU ARE NOT AN ALE EXPERT!
 parameters:
   
-  # If enabled pools multiple experiments from same paper into one experiment; Default: False
-  pool_experiments: False
+  # If enabled pools multiple experiments from same paper into one experiment; Default: True
+  pool_experiments: True
 
   # TFCE is a method for multiple comparison correction (Frahm et al., 2022)
   tfce_enabled: True
@@ -17,22 +17,22 @@ parameters:
   # if enabled ALE map (and therefore all following maps) will be masked by ICBM 10% GM mask
   gm_masking: True
 
+  # Size of bins used in MA histogram
+  bin_steps: 0.0001 # Default: 0.0001
   
   # If enabled uses xgboost models to predict cutoffs instead of monte carlo simulation (Frahm et al., 2024)
   cutoff_predict_enabled: True
 
-  # !! ONLY IF CUTOFF PREDICT IS DISABLED, OTHERWISE WON'T HAVE EFFECT !!
-
-  # Size of bins used in MA histogram
-  bin_steps: 0.0001 # Default: 0.0001
-
   # P-value required for significance
+  # !! ONLY IF CUTOFF PREDICT IS DISABLED, OTHERWISE WON'T HAVE EFFECT !!
   significance_threshold: 0.05 # Default: 0.05
 
   # Preliminary cluster forming threshold used in cluster-level family wise error correction
+  # !! ONLY IF CUTOFF PREDICT IS DISABLED, OTHERWISE WON'T HAVE EFFECT !!
   cluster_forming_threshold: 0.001 # Default: 0.001
 
   # Iterations used for monte-carlo based multiple comparison correction 
+  # !! ONLY IF CUTOFF PREDICT IS DISABLED, OTHERWISE WON'T HAVE EFFECT !!
   monte_carlo_iterations: 5000 # Default: 5000
 
   # N subsamples calculated for probabilistic ALE algorithm
