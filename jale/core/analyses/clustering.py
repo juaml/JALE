@@ -28,6 +28,7 @@ def clustering(
     subsample_fraction=0.9,
     sampling_iterations=500,
     null_iterations=1000,
+    use_pooled_std=False,
 ):
     folder_setup(project_path, "MA_Clustering")
 
@@ -83,6 +84,7 @@ def clustering(
             subsample_fraction=subsample_fraction,
             sampling_iterations=sampling_iterations,
             null_iterations=null_iterations,
+            use_pooled_std=use_pooled_std,
         )
     elif clustering_method == "kmeans":
         logger.info(f"{meta_name} - kmeans clustering")
@@ -97,6 +99,7 @@ def clustering(
             subsample_fraction=subsample_fraction,
             sampling_iterations=sampling_iterations,
             null_iterations=null_iterations,
+            use_pooled_std=use_pooled_std,
         )
 
 

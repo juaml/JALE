@@ -392,4 +392,5 @@ def run_ma_clustering(analysis_df, row_idx, project_path, params, exp_all_df, ta
         subsample_fraction=params["subsample_fraction"],
         sampling_iterations=params["sampling_iterations"],
         null_iterations=params["null_iterations"],
+        use_pooled_std=params["use_pooled_std"],
     )

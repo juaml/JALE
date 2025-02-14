@@ -64,4 +64,5 @@ clustering_parameters:
   correlation_type: "spearman" # Default: "spearman"; Options: "spearman", "pearson"
   clustering_method: "hierarchical" # Default: "hierarchical"; Options: "hierarchical", "kmeans"
   linkage_method: "complete" # Default: "complete"; Options: "complete", "average", "ward"
+  use_pooled_std: False # Default: False
 # DO NOT CHANGE THESE IF YOU ARE NOT AN ALE EXPERT
