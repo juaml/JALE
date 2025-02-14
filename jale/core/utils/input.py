@@ -502,17 +502,15 @@ def check_for_exp_independence(exp_df):
     """
     duplicate_mask = exp_df.duplicated(subset="Articles", keep=False)
     if duplicate_mask.any():
+        logger.warning("Atleast one Article is associated with multiple experiments.")
+        logger.warning("Please check carefully for independence of experiments.")
+        logger.warning(
+            "If not independent please change config and set pool_experiments to 'True'."
+        )
         # Optionally, list the problematic articles and their associated tags
         duplicated_articles = exp_df[duplicate_mask]
         for article in duplicated_articles["Articles"].unique():
-            tags = duplicated_articles.loc[
-                duplicated_articles["Articles"] == article, "Tags"
-            ].unique()
-            logger.warning(f"Article '{article}' appears with multiple tags: {tags}")
-            logger.warning("Please check carefully for independence of experiments.")
-            logger.warning(
-                "If not independent please change config and set pool_experiments to 'True'."
-            )
+            logger.warning(f"{article}")
 
 
 def check_params(params):
