@@ -3,6 +3,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from scipy.cluster.hierarchy import (
     cophenet,
     dendrogram,
@@ -11,7 +12,7 @@ from scipy.cluster.hierarchy import (
     optimal_leaf_ordering,
 )
 from scipy.spatial.distance import squareform
-from scipy.stats import spearmanr
+from scipy.stats import entropy, spearmanr
 from sklearn.metrics import (
     calinski_harabasz_score,
     silhouette_score,
@@ -323,6 +324,97 @@ def compute_seperation_density(cluster_labels):
     separation_density = cluster_sizes[0] / sum(cluster_sizes)  # n1 / n0
 
     return separation_density
+
+
+def compute_cluster_similarity_entropy(labels_k, labels_kplus1, plot_matrix=False):
+    """
+    Computes a similarity matrix between cluster assignments at two model orders (k and k+1),
+    along with entropy-based fragmentation scores.
+
+    This function measures how each cluster at model order `k` distributes its members across
+    clusters at model order `k+1`. It uses entropy to quantify how "fragmented" or "stable"
+    each cluster's assignment becomes when increasing the number of clusters.
+
+    Parameters
+    ----------
+    labels_k : array-like of shape (n_samples,)
+        Cluster labels for each sample at model order k.
+
+    labels_kplus1 : array-like of shape (n_samples,)
+        Cluster labels for each sample at model order k+1.
+
+    plot_matrix : bool, default=False
+        If True, displays a heatmap of the cluster redistribution matrix.
+
+    Returns
+    -------
+    result : dict with keys
+        - "similarity_matrix" : ndarray of shape (n_k, n_kplus1)
+            The normalized matrix where each row shows the distribution of a cluster at k
+            over clusters at k+1.
+
+        - "entropies" : ndarray of shape (n_k,)
+            Entropy values (in bits) for each cluster at k, indicating fragmentation.
+
+        - "mean_entropy" : float
+            Average entropy across all clusters at model order k — a global fragmentation score.
+
+    Notes
+    -----
+    - Entropy is computed with base 2.
+    - A small epsilon is added to avoid log(0) in entropy calculation.
+    - This method assumes a fixed number of samples with cluster labels at both model orders.
+    """
+    labels_k = np.array(labels_k)
+    labels_kplus1 = np.array(labels_kplus1)
+
+    # Unique clusters
+    clusters_k = np.unique(labels_k)
+    clusters_kplus1 = np.unique(labels_kplus1)
+
+    n_k = len(clusters_k)
+    n_kplus1 = len(clusters_kplus1)
+
+    # Build the similarity matrix S: rows = clusters_k, cols = clusters_kplus1
+    S = np.zeros((n_k, n_kplus1))
+
+    # Mapping from cluster label to index
+    k_index = {label: i for i, label in enumerate(clusters_k)}
+    kplus1_index = {label: j for j, label in enumerate(clusters_kplus1)}
+
+    for label in clusters_k:
+        indices = np.where(labels_k == label)[0]
+        next_labels = labels_kplus1[indices]
+        counts = np.bincount([kplus1_index[l] for l in next_labels], minlength=n_kplus1)
+        S[k_index[label], :] = counts / len(indices)  # Normalize to make row sum to 1
+
+    # Compute entropy per cluster at model order k
+    entropies = np.array(
+        [entropy(row + 1e-12, base=2) for row in S]
+    )  # small epsilon to avoid log(0)
+    mean_entropy = np.mean(entropies)
+
+    if plot_matrix:
+        plt.figure(figsize=(10, 6))
+        sns.heatmap(
+            S,
+            annot=True,
+            fmt=".2f",
+            cmap="Blues",
+            xticklabels=[f"k+1-{l}" for l in clusters_kplus1],
+            yticklabels=[f"k-{l}" for l in clusters_k],
+        )
+        plt.title("Cluster Redistribution Matrix (k → k+1)")
+        plt.xlabel("Clusters at k+1")
+        plt.ylabel("Clusters at k")
+        plt.tight_layout()
+        plt.show()
+
+    return {
+        "similarity_matrix": S,
+        "entropies": entropies,
+        "mean_entropy": mean_entropy,
+    }
 
 
 def compute_hc_metrics_z(
