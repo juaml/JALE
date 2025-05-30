@@ -42,7 +42,7 @@ def compile_experiments(conditions, tasks):
             # Logical AND
             tag = argument.lower()
             matches = tasks[tasks["Name"].str.lower() == tag]["ExpIndex"].values
-            if not matches:
+            if matches.size == 0:
                 raise ValueError(f"No experiments found for tag: {tag}")
             exp_to_use.append(matches[0])
 
@@ -50,7 +50,7 @@ def compile_experiments(conditions, tasks):
             # Logical NOT
             tag = argument.lower()
             matches = tasks[tasks["Name"].str.lower() == tag]["ExpIndex"].values
-            if not matches:
+            if matches.size == 0:
                 raise ValueError(f"No experiments found for tag: {tag}")
             not_to_use.append(matches[0])
 
@@ -74,15 +74,16 @@ def compile_experiments(conditions, tasks):
             else:
                 masks.append(mask.astype(int))
 
-            mask_names.append(argument.rsplit(".", 1)[0])
+            mask_names.append(argument.rsplit(".n", 1)[0])
 
-    # Compute final set of experiments to use
-    if exp_to_use:
-        use_sets = map(set, exp_to_use)
-        exp_to_use = list(set.intersection(*use_sets))
-        if len(exp_to_use) == 0:
-            raise ValueError("Bad tag combination. No experiments found.")
+    # Combine experiments using logical AND or just pass the single set
+    use_sets = list(map(set, exp_to_use))
+    if len(use_sets) == 1:
+        exp_to_use = list(use_sets[0])
     else:
+        exp_to_use = list(set.intersection(*use_sets))
+
+    if len(exp_to_use) == 0:
         raise ValueError("Bad tag combination. No experiments found.")
 
     # Remove excluded experiments
