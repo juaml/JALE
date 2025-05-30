@@ -3,7 +3,6 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from scipy.cluster.hierarchy import (
     cophenet,
     dendrogram,
@@ -41,8 +40,8 @@ def hierarchical_clustering_pipeline(
     (
         silhouette_scores,
         calinski_harabasz_scores,
-        seperation_densities,
-        cophenet_scores,
+        relative_coph_dists,
+        cluster_similarity_entropy,
         cluster_labels,
     ) = compute_hc_subsampling(
         correlation_matrix=correlation_matrix,
@@ -94,8 +93,8 @@ def hierarchical_clustering_pipeline(
         silhouette_scores_z=silhouette_scores_z,
         calinski_harabasz_scores=calinski_harabasz_scores,
         calinski_harabasz_scores_z=calinski_harabasz_scores_z,
-        seperation_densities=seperation_densities,
-        cophenet_scores=cophenet_scores,
+        relative_coph_dists=relative_coph_dists,
+        matrix_similarity_entropy=cluster_similarity_entropy,
         correlation_type=correlation_type,
         linkage_method=linkage_method,
     )
@@ -106,8 +105,8 @@ def hierarchical_clustering_pipeline(
         silhouette_scores_z=silhouette_scores_z,
         calinski_harabasz_scores=calinski_harabasz_scores,
         calinski_harabasz_scores_z=calinski_harabasz_scores_z,
-        seperation_densities=seperation_densities,
-        cophenet_scores=cophenet_scores,
+        relative_coph_dists=relative_coph_dists,
+        matrix_similarity_entropy=cluster_similarity_entropy,
         correlation_type=correlation_type,
         linkage_method=linkage_method,
     )
@@ -133,7 +132,8 @@ def compute_hc_subsampling(
 
     silhouette_scores = np.empty((max_clusters - 1, sampling_iterations))
     calinski_harabasz_scores = np.empty((max_clusters - 1, sampling_iterations))
-    seperation_densities = np.empty((max_clusters - 1, sampling_iterations))
+    relative_coph_dists = np.empty((max_clusters - 2, sampling_iterations))
+    cluster_similarity_entropy = np.empty((max_clusters - 2, sampling_iterations))
     cluster_labels = np.full(
         (max_clusters - 1, correlation_matrix.shape[0], sampling_iterations), np.nan
     )
@@ -143,22 +143,23 @@ def compute_hc_subsampling(
         target_n=int(subsample_fraction * correlation_matrix.shape[0]),
         sample_n=sampling_iterations,
     )
-    # Iterate over different values of k, compute cluster metrics
-    cophenet_distance = []
-    for k in range(2, max_clusters + 1):
-        for i in range(sampling_iterations):
-            # Resample indices for subsampling
-            resampled_indices = subsamples[i]
-            resampled_correlation = correlation_matrix[
-                np.ix_(resampled_indices, resampled_indices)
-            ]
-            resampled_distance = correlation_distance[
-                np.ix_(resampled_indices, resampled_indices)
-            ]
 
-            # Ensure diagonal is zero for distance matrix
-            np.fill_diagonal(resampled_distance, 0)
+    for i in range(sampling_iterations):
+        # Resample indices for subsampling
+        resampled_indices = subsamples[i]
 
+        # Extract subsampled matrices once
+        resampled_correlation = correlation_matrix[
+            np.ix_(resampled_indices, resampled_indices)
+        ]
+        resampled_distance = correlation_distance[
+            np.ix_(resampled_indices, resampled_indices)
+        ]
+        np.fill_diagonal(resampled_distance, 0)
+
+        between_cluster_cophenet = []
+        for k in range(2, max_clusters + 1):
+            # Compute clustering
             (
                 silhouette_score,
                 calinski_harabasz_score,
@@ -168,38 +169,37 @@ def compute_hc_subsampling(
                 k=k,
                 linkage_method=linkage_method,
             )
+
             silhouette_scores[k - 2, i] = silhouette_score
             calinski_harabasz_scores[k - 2, i] = calinski_harabasz_score
             cluster_labels[k - 2, resampled_indices, i] = cluster_label
 
-            seperation_densities[k - 2, i] = compute_seperation_density(
-                cluster_labels=cluster_label
+            between_cluster_cophenet_k = compute_between_cluster_cophenet(
+                distance_matrix=resampled_distance,
+                linkage_method=linkage_method,
+                k=k,
+                agg="mean",
             )
 
-        # compute within cluster cophenetic distance
-        within_cluster_cophonet = compute_within_cluster_cophenet(
-            cluster_labels=cluster_labels[k - 2],
-            linkage_method=linkage_method,
-            distance_matrix=correlation_distance,
-        )
-        cophenet_distance.append(within_cluster_cophonet)
+            between_cluster_cophenet.append(between_cluster_cophenet_k)
 
-        # compute seperation density
+            if k > 2:
+                relative_coph_dist = (
+                    between_cluster_cophenet[k - 2] - between_cluster_cophenet[k - 3]
+                ) / (between_cluster_cophenet[k - 2] + 1e-12)
+                relative_coph_dists[k - 3, i] = relative_coph_dist
 
-    # Compute relative cophenetic distances
-    relative_cophenetic_distances = [0]
-    for i in range(max_clusters - 3):
-        c_current = cophenet_distance[i]
-        c_next = cophenet_distance[i + 1]
-        relative_dc = (c_next - c_current) / c_next if c_next != 0 else 0
-        relative_cophenetic_distances.append(relative_dc)
-    relative_cophenetic_distances.append(0)
+                entropy_dict = compute_cluster_similarity_entropy(
+                    labels_k=cluster_labels[k - 3, resampled_indices, i],
+                    labels_kplus1=cluster_labels[k - 2, resampled_indices, i],
+                )
+                cluster_similarity_entropy[k - 3, i] = entropy_dict["mean_entropy"]
 
     return (
         silhouette_scores,
         calinski_harabasz_scores,
-        seperation_densities,
-        relative_cophenetic_distances,
+        relative_coph_dists,
+        cluster_similarity_entropy,
         cluster_labels,
     )
 
@@ -299,34 +299,60 @@ def compute_hierarchical_clustering(correlation_matrix, k, linkage_method):
     )
 
 
-def compute_within_cluster_cophenet(cluster_labels, linkage_method, distance_matrix):
-    within_cluster_cophenet = []
-    for cluster_id in np.unique(cluster_labels):
-        indices = np.where(cluster_labels == cluster_id)[0]
-        if len(indices) > 1:  # Only calculate if there are at least two points
-            sub_distances = squareform(
-                distance_matrix[np.ix_(indices, indices)], checks=False
-            )
-            sub_Z = linkage(sub_distances, method=linkage_method)
-            cophenet_score = cophenet(sub_Z, sub_distances)[0]
-            within_cluster_cophenet.append(cophenet_score)
-    within_cluster_cophenet = np.average(within_cluster_cophenet)
-    return within_cluster_cophenet
+def compute_between_cluster_cophenet(
+    distance_matrix, linkage_method="average", k=2, agg="mean"
+):
+    """
+    Compute average cophenetic distance between clusters at model order k.
+
+    Parameters
+    ----------
+    distance_matrix : ndarray of shape (n_samples, n_samples)
+        Pairwise distance matrix (e.g., 1 - correlation).
+
+    linkage_method : str
+        Linkage method for hierarchical clustering.
+
+    k : int
+        Number of clusters to cut tree into.
+
+    agg : str
+        Aggregation method: "mean", "min", or "max"
+
+    Returns
+    -------
+    avg_between_dist : float
+        Mean cophenetic distance between different clusters.
+    """
+
+    condensed_dist = squareform(distance_matrix, checks=False)
+    Z = linkage(condensed_dist, method=linkage_method)
+    coph_dist_matrix = squareform(cophenet(Z, condensed_dist)[1])
+
+    cluster_labels = fcluster(Z, t=k, criterion="maxclust")
+
+    between_dists = []
+
+    for i in range(k):
+        indices_i = np.where(cluster_labels == (i + 1))[0]
+        for j in range(i + 1, k):
+            indices_j = np.where(cluster_labels == (j + 1))[0]
+            # Compute all pairwise distances between clusters i and j
+            sub_dists = coph_dist_matrix[np.ix_(indices_i, indices_j)]
+            if agg == "mean":
+                val = np.mean(sub_dists)
+            elif agg == "min":
+                val = np.min(sub_dists)
+            elif agg == "max":
+                val = np.max(sub_dists)
+            else:
+                raise ValueError("Invalid agg method")
+            between_dists.append(val)
+
+    return np.mean(between_dists) if between_dists else np.nan
 
 
-def compute_seperation_density(cluster_labels):
-    # Compute cluster sizes manually
-    unique_labels = np.unique(cluster_labels)
-    cluster_sizes = [np.sum(cluster_labels == label) for label in unique_labels]
-
-    # Sort cluster sizes in descending order
-    cluster_sizes.sort(reverse=True)
-    separation_density = cluster_sizes[0] / sum(cluster_sizes)  # n1 / n0
-
-    return separation_density
-
-
-def compute_cluster_similarity_entropy(labels_k, labels_kplus1, plot_matrix=False):
+def compute_cluster_similarity_entropy(labels_k, labels_kplus1):
     """
     Computes a similarity matrix between cluster assignments at two model orders (k and k+1),
     along with entropy-based fragmentation scores.
@@ -342,9 +368,6 @@ def compute_cluster_similarity_entropy(labels_k, labels_kplus1, plot_matrix=Fals
 
     labels_kplus1 : array-like of shape (n_samples,)
         Cluster labels for each sample at model order k+1.
-
-    plot_matrix : bool, default=False
-        If True, displays a heatmap of the cluster redistribution matrix.
 
     Returns
     -------
@@ -385,7 +408,9 @@ def compute_cluster_similarity_entropy(labels_k, labels_kplus1, plot_matrix=Fals
     for label in clusters_k:
         indices = np.where(labels_k == label)[0]
         next_labels = labels_kplus1[indices]
-        counts = np.bincount([kplus1_index[l] for l in next_labels], minlength=n_kplus1)
+        counts = np.bincount(
+            [kplus1_index[label] for label in next_labels], minlength=n_kplus1
+        )
         S[k_index[label], :] = counts / len(indices)  # Normalize to make row sum to 1
 
     # Compute entropy per cluster at model order k
@@ -393,22 +418,6 @@ def compute_cluster_similarity_entropy(labels_k, labels_kplus1, plot_matrix=Fals
         [entropy(row + 1e-12, base=2) for row in S]
     )  # small epsilon to avoid log(0)
     mean_entropy = np.mean(entropies)
-
-    if plot_matrix:
-        plt.figure(figsize=(10, 6))
-        sns.heatmap(
-            S,
-            annot=True,
-            fmt=".2f",
-            cmap="Blues",
-            xticklabels=[f"k+1-{l}" for l in clusters_kplus1],
-            yticklabels=[f"k-{l}" for l in clusters_k],
-        )
-        plt.title("Cluster Redistribution Matrix (k → k+1)")
-        plt.xlabel("Clusters at k+1")
-        plt.ylabel("Clusters at k")
-        plt.tight_layout()
-        plt.show()
 
     return {
         "similarity_matrix": S,
@@ -537,8 +546,8 @@ def save_hc_metrics(
     silhouette_scores_z,
     calinski_harabasz_scores,
     calinski_harabasz_scores_z,
-    seperation_densities,
-    cophenet_scores,
+    relative_coph_dists,
+    cluster_similarity_entropy,
     correlation_type,
     linkage_method,
 ):
@@ -551,8 +560,11 @@ def save_hc_metrics(
             "Calinski-Harabasz Scores": np.average(calinski_harabasz_scores, axis=1),
             "Calinski-Harabasz Scores SD": np.std(calinski_harabasz_scores, axis=1),
             "Calinski-Harabasz Scores Z": calinski_harabasz_scores_z,
-            "Seperation Density": np.average(seperation_densities, axis=1),
-            "Cophenet Scores": cophenet_scores,
+            "Cophenet Scores": [0, np.average(relative_coph_dists, axis=1)],
+            "Cluster Similarity Entropy": [
+                0,
+                np.average(cluster_similarity_entropy, axis=1),
+            ],
         }
     )
     metrics_df.to_csv(
@@ -569,15 +581,15 @@ def plot_hc_metrics(
     silhouette_scores_z,
     calinski_harabasz_scores,
     calinski_harabasz_scores_z,
-    seperation_densities,
-    cophenet_scores,
+    relative_coph_dists,
+    cluster_similarity_entropy,
     correlation_type,
     linkage_method,
 ):
     plt.figure(figsize=(12, 15))
 
     # Plot Silhouette Scores
-    plt.subplot(6, 1, 1)
+    plt.subplot(5, 1, 1)
     plt.plot(np.average(silhouette_scores, axis=1), marker="o")
     plt.title("Silhouette Scores")
     plt.xlabel("Number of Clusters")
@@ -589,7 +601,7 @@ def plot_hc_metrics(
     plt.grid()
 
     # Plot Silhouette Scores Z
-    plt.subplot(6, 1, 2)
+    plt.subplot(5, 1, 2)
     plt.plot(silhouette_scores_z, marker="o")
     plt.title("Silhouette Scores Z")
     plt.xlabel("Number of Clusters")
@@ -601,7 +613,7 @@ def plot_hc_metrics(
     plt.grid()
 
     # Plot Calinski-Harabasz Scores
-    plt.subplot(6, 1, 3)
+    plt.subplot(5, 1, 3)
     plt.plot(np.average(calinski_harabasz_scores, axis=1), marker="o")
     plt.title("Calinski-Harabasz Scores")
     plt.xlabel("Number of Clusters")
@@ -613,7 +625,7 @@ def plot_hc_metrics(
     plt.grid()
 
     # Plot Calinski-Harabasz Scores Z
-    plt.subplot(6, 1, 4)
+    plt.subplot(5, 1, 4)
     plt.plot(calinski_harabasz_scores_z, marker="o")
     plt.title("Calinski-Harabasz Scores Z")
     plt.xlabel("Number of Clusters")
@@ -624,33 +636,41 @@ def plot_hc_metrics(
     plt.ylabel("Z-Score")
     plt.grid()
 
-    # Plot Seperation Density
-    plt.subplot(6, 1, 5)
-    plt.plot(np.average(seperation_densities, axis=1), marker="o")
-    plt.title("Seperation Density")
-    plt.xlabel("Number of Clusters")
-    plt.xticks(
-        ticks=range(len(seperation_densities)),
-        labels=range(2, len(seperation_densities) + 2),
+    plt.tight_layout()
+    plt.savefig(
+        project_path
+        / f"Results/MA_Clustering/{meta_name}_clustering_metrics_{correlation_type}_hc_{linkage_method}.png"
     )
-    plt.ylabel("Density")
 
+    plt.figure(figsize=(12, 6))
     # Plot Cophenet Scores
-    plt.subplot(6, 1, 6)
-    plt.plot(cophenet_scores, marker="o")
-    plt.title("Cophenet Scores")
+    plt.subplot(2, 1, 1)
+    plt.plot(relative_coph_dists, marker="o")
+    plt.title("Relative Cophenet Scores (compared to K-1)")
     plt.xlabel("Number of Clusters")
     plt.xticks(
-        ticks=range(len(cophenet_scores)),
-        labels=range(2, len(cophenet_scores) + 2),
+        ticks=range(len(relative_coph_dists)),
+        labels=range(3, len(relative_coph_dists) + 3),
     )
     plt.ylabel("Score")
+    plt.grid()
+
+    # Plot Cluster Similarity Entropy
+    plt.subplot(2, 1, 2)
+    plt.plot(cluster_similarity_entropy, marker="o")
+    plt.title("Cluster Similarity Entropy")
+    plt.xlabel("Number of Clusters")
+    plt.xticks(
+        ticks=range(len(cluster_similarity_entropy)),
+        labels=range(3, len(cluster_similarity_entropy) + 3),
+    )
+    plt.ylabel("Entropy")
     plt.grid()
 
     plt.tight_layout()
     plt.savefig(
         project_path
-        / f"Results/MA_Clustering/{meta_name}_clustering_metrics_{correlation_type}_hc_{linkage_method}.png"
+        / f"Results/MA_Clustering/{meta_name}_clustering_metrics_{correlation_type}_hc_{linkage_method}_coph_entropy.png"
     )
 
 
