@@ -1,9 +1,9 @@
-*.xl*
-__pycache__/
-.*/
-*.ipynb
+*__pycache__*
+.ruff_cache/
+.vscode/
 ruff.toml
 *.code-workspace
 gui_example.py
 .python-version
-JALE.egg-info/
+jale.egg-info/
+.ipynb_checkpoints/
