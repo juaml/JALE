@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
+from jsonschema import validate
 
 from jale.core.utils.compile_experiments import compile_experiments
 from jale.core.utils.tal2icbm_spm import tal2icbm_spm
@@ -17,13 +18,16 @@ def load_config(yaml_path):
     """Load configuration from YAML file."""
     try:
         with open(yaml_path, "r") as file:
-            return yaml.safe_load(file)
+            config = yaml.safe_load(file)
+            config = validate_config(config)
     except FileNotFoundError:
         logger.error(f"YAML file not found at path: {yaml_path}")
         sys.exit(1)
     except yaml.YAMLError as e:
         logger.error(f"Error loading YAML file: {e}")
         sys.exit(1)
+
+    return config
 
 
 def load_experiment_file(filepath):
@@ -602,3 +606,117 @@ def determine_target_n(row_value, exp_dfs):
         return int(row_value[1:])
     n = [len(exp_dfs[0]), len(exp_dfs[1])]
     return int(min(np.floor(np.mean((np.min(n), 17))), np.min(n) - 2))
+
+
+def validate_config(config):
+    """
+    Validate a YAML file (structure and values).
+
+    Parameters:
+        config (dict): parsed dictionary.
+
+    Returns:
+        dict: validated config dictionary.
+
+    Raises:
+        jsonschema.ValidationError: If validation fails.
+        yaml.YAMLError: If the YAML is not properly formatted.
+    """
+
+    SCHEMA = {
+        "type": "object",
+        "properties": {
+            "project": {
+                "type": "object",
+                "properties": {
+                    "analysis_info": {"type": "string"},
+                    "experiment_info": {"type": "string"},
+                },
+                "required": ["analysis_info", "experiment_info"],
+            },
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pool_experiments": {"type": "boolean"},
+                    "tfce_enabled": {"type": "boolean"},
+                    "gm_masking": {"type": "boolean"},
+                    "bin_steps": {"type": "number"},
+                    "cutoff_predict_enabled": {"type": "boolean"},
+                    "significance_threshold": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                    },
+                    "cluster_forming_threshold": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                    },
+                    "monte_carlo_iterations": {"type": "integer", "minimum": 1},
+                    "subsample_n": {"type": "integer", "minimum": 1},
+                    "contrast_permutations": {"type": "integer", "minimum": 1},
+                    "contrast_correction_method": {
+                        "type": "string",
+                        "enum": ["cFWE", "vFWE", "tfce"],
+                    },
+                    "difference_iterations": {"type": "integer", "minimum": 1},
+                    "nprocesses": {"type": "integer", "minimum": 1},
+                },
+                "required": [
+                    "pool_experiments",
+                    "tfce_enabled",
+                    "gm_masking",
+                    "bin_steps",
+                    "cutoff_predict_enabled",
+                    "significance_threshold",
+                    "cluster_forming_threshold",
+                    "monte_carlo_iterations",
+                    "subsample_n",
+                    "contrast_permutations",
+                    "contrast_correction_method",
+                    "difference_iterations",
+                    "nprocesses",
+                ],
+            },
+            "clustering_parameters": {
+                "type": "object",
+                "properties": {
+                    "max_clusters": {"type": "integer", "minimum": 1},
+                    "subsample_fraction": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                    },
+                    "sampling_iterations": {"type": "integer", "minimum": 1},
+                    "null_iterations": {"type": "integer", "minimum": 1},
+                    "correlation_type": {
+                        "type": "string",
+                        "enum": ["spearman", "pearson"],
+                    },
+                    "clustering_method": {
+                        "type": "string",
+                        "enum": ["hierarchical", "kmeans"],
+                    },
+                    "linkage_method": {
+                        "type": "string",
+                        "enum": ["complete", "average", "ward"],
+                    },
+                    "use_pooled_std": {"type": "boolean"},
+                },
+                "required": [
+                    "max_clusters",
+                    "subsample_fraction",
+                    "sampling_iterations",
+                    "null_iterations",
+                    "correlation_type",
+                    "clustering_method",
+                    "linkage_method",
+                    "use_pooled_std",
+                ],
+            },
+        },
+        "required": ["project", "parameters", "clustering_parameters"],
+    }
+
+    validate(instance=config, schema=SCHEMA)
+    return config
