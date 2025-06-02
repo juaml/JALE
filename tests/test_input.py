@@ -1,27 +1,25 @@
+import pathlib
 from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import pytest
 
-import jale.core.utils.input as mod
+import jale.core.utils.input as io
 
 
 # --- Test load_config ---
-def test_load_config_success(tmp_path):
-    content = (
-        "project:\n  experiment_info: exp.xlsx\nparameters:\n  pool_experiments: true\n"
-    )
-    file = tmp_path / "config.yml"
-    file.write_text(content)
-    cfg = mod.load_config(file)
+def test_load_config_success():
+    current_dir = pathlib.Path(__file__).parent
+    config_path = current_dir / "config.yml"
+    cfg = io.load_config(config_path)
     assert isinstance(cfg, dict)
     assert "project" in cfg and "parameters" in cfg
 
 
 def test_load_config_file_not_found():
     with pytest.raises(SystemExit):
-        mod.load_config("nonexistent_file.yml")
+        io.load_config("nonexistent_file.yml")
 
 
 def test_load_config_bad_yaml(tmp_path):
@@ -29,7 +27,7 @@ def test_load_config_bad_yaml(tmp_path):
     file = tmp_path / "bad.yml"
     file.write_text(bad_yaml)
     with pytest.raises(SystemExit):
-        mod.load_config(file)
+        io.load_config(file)
 
 
 # --- Test load_experiment_file ---
@@ -46,7 +44,7 @@ def test_load_experiment_file_excel(mock_read_excel):
         }
     )
     mock_read_excel.return_value = df
-    result = mod.load_experiment_file("file.xlsx")
+    result = io.load_experiment_file("file.xlsx")
     assert "Articles" in result.columns
     assert "x" in result.columns
     assert result.shape[0] == 3
@@ -54,7 +52,7 @@ def test_load_experiment_file_excel(mock_read_excel):
 
 def test_load_experiment_file_unsupported_format():
     with pytest.raises(SystemExit):
-        mod.load_experiment_file("file.unsupported")
+        io.load_experiment_file("file.unsupported")
 
 
 @patch("pandas.read_excel")
@@ -72,7 +70,7 @@ def test_load_experiment_file_with_bad_rows(mock_read_excel):
     )
     mock_read_excel.return_value = df
     with pytest.raises(SystemExit):
-        mod.load_experiment_file("file.xlsx")
+        io.load_experiment_file("file.xlsx")
 
 
 # --- Test check_coordinates_are_numbers ---
@@ -84,7 +82,7 @@ def test_check_coordinates_are_numbers_valid():
             "z": [5.0, 6.0],
         }
     )
-    result = mod.check_coordinates_are_numbers(df)
+    result = io.check_coordinates_are_numbers(df)
     assert result.index.equals(pd.RangeIndex(start=0, stop=2))
 
 
@@ -97,7 +95,7 @@ def test_check_coordinates_are_numbers_invalid():
         }
     )
     with pytest.raises(SystemExit):
-        mod.check_coordinates_are_numbers(df)
+        io.check_coordinates_are_numbers(df)
 
 
 # --- Test concat_tags ---
@@ -114,7 +112,7 @@ def test_concat_tags_basic():
             "Tag2": ["B", "C"],
         }
     )
-    out = mod.concat_tags(df)
+    out = io.concat_tags(df)
     assert "Tags" in out.columns
     assert out.loc[0, "Tags"] == ("a", "b")
     assert out.loc[1, "Tags"] == ("c",)
@@ -133,7 +131,7 @@ def test_concat_coordinates_pool_true():
             "Tags": [("tag1",), ("tag1",)],
         }
     )
-    out = mod.concat_coordinates(df, pool_experiments=True)
+    out = io.concat_coordinates(df, pool_experiments=True)
     assert "Coordinates_mm" in out.columns
     assert out.iloc[0]["NumberOfFoci"] == 2
     assert isinstance(out.iloc[0]["Coordinates_mm"], np.ndarray)
@@ -151,7 +149,7 @@ def test_concat_coordinates_pool_false():
             "Tags": [("tag1",), ("tag2",)],
         }
     )
-    out = mod.concat_coordinates(df, pool_experiments=False)
+    out = io.concat_coordinates(df, pool_experiments=False)
     assert out.shape[0] == 2
 
 
@@ -171,9 +169,9 @@ def test_convert_tal_2_mni_calls_tal2icbm_spm(monkeypatch):
         called["called"] = True
         return coords + 1  # dummy transform
 
-    monkeypatch.setattr(mod, "tal2icbm_spm", fake_tal2icbm_spm)
+    monkeypatch.setattr(io, "tal2icbm_spm", fake_tal2icbm_spm)
     out = df.copy(deep=True)
-    out = mod.convert_tal_2_mni(out)
+    out = io.convert_tal_2_mni(out)
     print("After transform:", df.loc[0, "Coordinates_mm"])
     assert called.get("called") is True
     assert np.all(out.loc[0, "Coordinates_mm"] == df.loc[0, "Coordinates_mm"] + 1)
@@ -185,7 +183,7 @@ def test_transform_coordinates_to_voxel_space_basic():
     df = pd.DataFrame(
         {"Coordinates_mm": [np.array([[0, 0, 0]]), np.array([[10, 20, 30]])]}
     )
-    out = mod.transform_coordinates_to_voxel_space(df)
+    out = io.transform_coordinates_to_voxel_space(df)
     assert "Coordinates" in out.columns
     assert isinstance(out.iloc[0]["Coordinates"], np.ndarray)
 
@@ -199,7 +197,7 @@ def test_create_tasks_table_basic():
             "Subjects": [10, 20],
         }
     )
-    tasks = mod.create_tasks_table(df)
+    tasks = io.create_tasks_table(df)
     assert "Name" in tasks.columns
     assert "Num_Exp" in tasks.columns
     assert "all" in tasks["Name"].values
@@ -208,7 +206,7 @@ def test_create_tasks_table_basic():
 # --- Test check_params ---
 def test_check_params_cutoff_enabled():
     params = {"cutoff_predict_enabled": True}
-    out = mod.check_params(params)
+    out = io.check_params(params)
     assert out["significance_threshold"] == 0.05
     assert out["cluster_forming_threshold"] == 0.001
     assert out["monte_carlo_iterations"] == 5000
@@ -216,8 +214,8 @@ def test_check_params_cutoff_enabled():
 
 def test_check_params_cutoff_disabled():
     params = {"cutoff_predict_enabled": False}
-    out = mod.check_params(params)
-    # Should not modify parameters
+    out = io.check_params(params)
+    # Should not ioify parameters
     assert "significance_threshold" not in out
 
 
@@ -230,7 +228,7 @@ def test_check_for_exp_independence_warns(caplog):
         }
     )
     with caplog.at_level("WARNING"):
-        mod.check_for_exp_independence(df)
+        io.check_for_exp_independence(df)
         assert "multiple experiments" in caplog.text
 
 
@@ -242,5 +240,5 @@ def test_check_for_exp_independence_no_warn(caplog):
         }
     )
     with caplog.at_level("WARNING"):
-        mod.check_for_exp_independence(df)
+        io.check_for_exp_independence(df)
         assert "multiple experiments" not in caplog.text
