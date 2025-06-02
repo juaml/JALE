@@ -51,7 +51,7 @@ def test_plot_and_save_replaces_nan_and_inf(project_path):
 
     with (
         patch("jale.core.utils.template.nb.loadsave.save") as mock_save,
-        patch("nilearn.plotting.plot_stat_map") as mock_plot,
+        patch("nilearn.plotting.plot_stat_map") as _,
     ):
         plot_and_save(project_path, "test_analysis", arr)
 

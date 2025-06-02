@@ -1,5 +1,4 @@
 import logging
-from multiprocessing import Process
 from threading import Thread
 
 import customtkinter
