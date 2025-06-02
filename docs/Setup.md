@@ -1,0 +1,3 @@
+# The command line interface
+
+Setting up and interacting with JALE currently only works using the command-line-interface (CLI). This way of installing and launching programs may seem daunting at first when coming from a completely mouse- and gui-based interaction with computers but in the end is not that complicated. Please take a look at this [Tutorial](https://tutorials.codebar.io/command-line/introduction/tutorial.html#:~:text=The%20cd%20command%20allows%20you,command%20is%20cd%20your%2Ddirectory%20.) if you are completely unfamiliar with the CLI.
