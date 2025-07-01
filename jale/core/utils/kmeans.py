@@ -50,7 +50,7 @@ def kmeans_clustering_pipeline(
         null_iterations=null_iterations,
         subsample_fraction=subsample_fraction,
     )
-    silhouette_scores_z, calinski_harabasz_scores_z = compute_hc_metrics_z(
+    silhouette_scores_z, calinski_harabasz_scores_z = compute_kmeans_metrics_z(
         silhouette_scores=silhouette_scores,
         calinski_harabasz_scores=calinski_harabasz_scores,
         null_silhouette_scores=null_silhouette_scores,
@@ -236,7 +236,7 @@ def compute_kmeans_clustering(correlation_matrix, k):
     )
 
 
-def compute_hc_metrics_z(
+def compute_kmeans_metrics_z(
     silhouette_scores,
     calinski_harabasz_scores,
     null_silhouette_scores,

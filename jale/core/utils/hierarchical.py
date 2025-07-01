@@ -3,6 +3,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from scipy.cluster.hierarchy import (
     dendrogram,
     fcluster,
@@ -101,8 +102,10 @@ def hierarchical_clustering_pipeline(
         project_path=project_path,
         meta_name=meta_name,
         silhouette_scores=silhouette_scores,
+        null_silhouette_scores=null_silhouette_scores,
         silhouette_scores_z=silhouette_scores_z,
         calinski_harabasz_scores=calinski_harabasz_scores,
+        null_calinski_harabasz_scores=null_calinski_harabasz_scores,
         calinski_harabasz_scores_z=calinski_harabasz_scores_z,
         rel_diff_cophenetic=rel_diff_cophenetic,
         exp_separation_density=exp_separation_density,
@@ -502,8 +505,10 @@ def plot_hc_metrics(
     project_path,
     meta_name,
     silhouette_scores,
+    null_silhouette_scores,
     silhouette_scores_z,
     calinski_harabasz_scores,
+    null_calinski_harabasz_scores,
     calinski_harabasz_scores_z,
     rel_diff_cophenetic,
     exp_separation_density,
@@ -511,41 +516,298 @@ def plot_hc_metrics(
     linkage_method,
     max_clusters,
 ):
-    # --- Standard Metrics Plot ---
-    plt.figure(figsize=(12, 15))
-    k_range = range(2, max_clusters + 1)
+    k_range = np.array(list(range(2, max_clusters + 1)))
 
-    plt.subplot(4, 1, 1)
-    plt.plot(k_range, np.average(silhouette_scores, axis=1), marker="o")
-    plt.title("Silhouette Scores")
-    plt.ylabel("Score")
-    plt.grid()
+    # Calculate average scores, handling NaNs
+    avg_silhouette_scores = np.nanmean(silhouette_scores, axis=1)
+    avg_calinski_harabasz_scores = np.nanmean(calinski_harabasz_scores, axis=1)
 
-    plt.subplot(4, 1, 2)
-    plt.plot(k_range, silhouette_scores_z, marker="o")
-    plt.title("Silhouette Scores Z")
-    plt.ylabel("Z-Score")
-    plt.grid()
+    # Set up Matplotlib figure and subplots
+    # Increased figsize for better readability and spacing
+    fig, axes = plt.subplots(
+        4, 1, figsize=(10, 18), sharex=True
+    )  # Share x-axis for better comparison
 
-    plt.subplot(4, 1, 3)
-    plt.plot(k_range, np.average(calinski_harabasz_scores, axis=1), marker="o")
-    plt.title("Calinski-Harabasz Scores")
-    plt.ylabel("Score")
-    plt.grid()
+    # Apply a nicer Seaborn style
+    sns.set_style("whitegrid")
+    sns.set_palette("viridis")  # A visually appealing color palette
 
-    plt.subplot(4, 1, 4)
-    plt.plot(k_range, calinski_harabasz_scores_z, marker="o")
-    plt.title("Calinski-Harabasz Scores Z")
-    plt.xlabel("Number of Clusters")
-    plt.ylabel("Z-Score")
-    plt.grid()
+    # --- Plot 1: Average Silhouette Scores ---
+    ax = axes[0]
+    ax.plot(
+        k_range,
+        avg_silhouette_scores,
+        marker="o",
+        linestyle="-",
+        linewidth=2,
+        markersize=8,
+        color=sns.color_palette("viridis")[0],
+    )
+    ax.set_title("Average Silhouette Scores", fontsize=14, fontweight="bold")
+    ax.set_ylabel("Average Score", fontsize=12)
+    ax.grid(True, linestyle="--", alpha=0.6)
+    # Add minor ticks for better readability
+    ax.minorticks_on()
+    ax.grid(which="minor", linestyle=":", linewidth="0.5", color="gray", alpha=0.3)
+    ax.tick_params(axis="both", which="major", labelsize=10)
 
-    plt.tight_layout()
+    # --- Plot 2: Silhouette Scores Z ---
+    ax = axes[1]
+    ax.plot(
+        k_range,
+        silhouette_scores_z,
+        marker="o",
+        linestyle="-",
+        linewidth=2,
+        markersize=8,
+        color=sns.color_palette("viridis")[1],
+    )
+    ax.set_title("Silhouette Scores Z-scores", fontsize=14, fontweight="bold")
+    ax.set_ylabel("Z-Score", fontsize=12)
+    ax.grid(True, linestyle="--", alpha=0.6)
+    # Add a horizontal line for common significance threshold (e.g., Z=1.96 for p<0.05, two-tailed)
+    ax.axhline(0, color="gray", linestyle="-", linewidth=0.8, alpha=0.7)  # Line at Z=0
+    ax.axhline(
+        1.96,
+        color="darkgreen",
+        linestyle=":",
+        linewidth=1.5,
+        label="Z=1.96 (p<0.05)",
+        alpha=0.7,
+    )
+    ax.axhline(-1.96, color="darkgreen", linestyle=":", linewidth=1.5, alpha=0.7)
+    ax.legend(loc="best", fontsize=10)
+    ax.minorticks_on()
+    ax.grid(which="minor", linestyle=":", linewidth="0.5", color="gray", alpha=0.3)
+    ax.tick_params(axis="both", which="major", labelsize=10)
+
+    # --- Plot 3: Average Calinski-Harabasz Scores ---
+    ax = axes[2]
+    ax.plot(
+        k_range,
+        avg_calinski_harabasz_scores,
+        marker="o",
+        linestyle="-",
+        linewidth=2,
+        markersize=8,
+        color=sns.color_palette("viridis")[2],
+    )
+    ax.set_title("Average Calinski-Harabasz Scores", fontsize=14, fontweight="bold")
+    ax.set_ylabel("Average Score", fontsize=12)
+    ax.grid(True, linestyle="--", alpha=0.6)
+    ax.minorticks_on()
+    ax.grid(which="minor", linestyle=":", linewidth="0.5", color="gray", alpha=0.3)
+    ax.tick_params(axis="both", which="major", labelsize=10)
+
+    # --- Plot 4: Calinski-Harabasz Scores Z ---
+    ax = axes[3]
+    ax.plot(
+        k_range,
+        calinski_harabasz_scores_z,
+        marker="o",
+        linestyle="-",
+        linewidth=2,
+        markersize=8,
+        color=sns.color_palette("viridis")[3],
+    )
+    ax.set_title("Calinski-Harabasz Scores Z-scores", fontsize=14, fontweight="bold")
+    ax.set_xlabel("Number of Clusters (k)", fontsize=12)
+    ax.set_ylabel("Z-Score", fontsize=12)
+    ax.grid(True, linestyle="--", alpha=0.6)
+    # Add a horizontal line for common significance threshold
+    ax.axhline(0, color="gray", linestyle="-", linewidth=0.8, alpha=0.7)  # Line at Z=0
+    ax.axhline(
+        1.96,
+        color="darkgreen",
+        linestyle=":",
+        linewidth=1.5,
+        label="Z=1.96 (p<0.05)",
+        alpha=0.7,
+    )
+    ax.axhline(
+        -1.96, color="darkgreen", linestyle=":", linewidth=1.5, alpha=0.7
+    )  # Only if negative Z-scores are meaningful
+    ax.legend(loc="best", fontsize=10)
+    ax.minorticks_on()
+    ax.grid(which="minor", linestyle=":", linewidth="0.5", color="gray", alpha=0.3)
+    ax.tick_params(axis="both", which="major", labelsize=10)
+
+    # Set common x-axis ticks and limits
+    # Ensure x-axis ticks are integers for number of clusters
+    axes[-1].set_xticks(k_range)
+    axes[-1].set_xlim(
+        min(k_range) - 0.5, max(k_range) + 0.5
+    )  # Add a small buffer around min/max k
+
+    plt.suptitle(
+        f"Clustering Metrics for {meta_name} ({correlation_type} correlation, {linkage_method} linkage)",
+        y=0.99,
+        fontsize=16,
+        fontweight="bold",
+    )  # Overall title for the figure
+    plt.tight_layout(
+        rect=[0, 0.03, 1, 0.96]
+    )  # Adjust layout to make space for suptitle
     plt.savefig(
         project_path
         / f"Results/MA_Clustering/{meta_name}_clustering_metrics_{correlation_type}_hc_{linkage_method}.png"
     )
     plt.close()
+
+    # --- Distribution Plots ---
+
+    num_k = len(k_range)
+
+    # --- Calculate Global X-axis Limits for Silhouette Scores ---
+    all_silhouette_scores = np.concatenate(
+        (silhouette_scores.flatten(), null_silhouette_scores.flatten())
+    )
+    all_silhouette_scores_cleaned = all_silhouette_scores[
+        ~np.isnan(all_silhouette_scores)
+    ]
+
+    if all_silhouette_scores_cleaned.size > 0:
+        min_sil_x = np.nanmin(all_silhouette_scores_cleaned)
+        max_sil_x = np.nanmax(all_silhouette_scores_cleaned)
+        # Add a small buffer to the limits
+        sil_x_buffer = (max_sil_x - min_sil_x) * 0.05
+        fixed_sil_xlim = [min_sil_x - sil_x_buffer, max_sil_x + sil_x_buffer]
+    else:
+        # Default limits if no valid data
+        fixed_sil_xlim = [-0.1, 1.1]  # Silhouette scores are typically -1 to 1
+
+    # --- Calculate Global X-axis Limits for Calinski-Harabasz Scores ---
+    all_ch_scores = np.concatenate(
+        (calinski_harabasz_scores.flatten(), null_calinski_harabasz_scores.flatten())
+    )
+    all_ch_scores_cleaned = all_ch_scores[~np.isnan(all_ch_scores)]
+
+    if all_ch_scores_cleaned.size > 0:
+        min_ch_x = np.nanmin(all_ch_scores_cleaned)
+        max_ch_x = np.nanmax(all_ch_scores_cleaned)
+        # Add a small buffer to the limits, ensure positive range for CH which is non-negative
+        ch_x_buffer = (max_ch_x - min_ch_x) * 0.05
+        fixed_ch_xlim = [max(0, min_ch_x - ch_x_buffer), max_ch_x + ch_x_buffer]
+    else:
+        # Default limits if no valid data
+        fixed_ch_xlim = [
+            0,
+            1000,
+        ]  # Calinski-Harabasz can vary widely, this is a placeholder
+
+    # Determine figure size dynamically based on the number of k values
+    fig_height = max(6, num_k * 3)  # Minimum height of 6, 3 inches per row
+    fig, axes = plt.subplots(
+        num_k, 2, figsize=(14, fig_height), squeeze=False
+    )  # 2 columns for Silhouette/CH
+
+    for i, k in enumerate(k_range):
+        # --- Silhouette Score Plots ---
+        ax_sil = axes[i, 0]
+
+        # Filter out NaN values for plotting KDEs
+        observed_sil = silhouette_scores[k - 2, :]
+        null_sil = null_silhouette_scores[k - 2, :]
+
+        observed_sil_cleaned = observed_sil[~np.isnan(observed_sil)]
+        null_sil_cleaned = null_sil[~np.isnan(null_sil)]
+
+        if observed_sil_cleaned.size > 1:  # KDE requires at least 2 data points
+            sns.kdeplot(
+                observed_sil_cleaned,
+                fill=True,
+                color="red",
+                ax=ax_sil,
+                label="Observed",
+            )
+        else:
+            ax_sil.text(
+                0.5,
+                0.5,
+                "Not enough observed data",
+                horizontalalignment="center",
+                verticalalignment="center",
+                transform=ax_sil.transAxes,
+                color="gray",
+            )
+
+        if null_sil_cleaned.size > 1:
+            sns.kdeplot(
+                null_sil_cleaned, fill=True, color="skyblue", ax=ax_sil, label="Null"
+            )
+        else:
+            ax_sil.text(
+                0.5,
+                0.3,
+                "Not enough null data",
+                horizontalalignment="center",
+                verticalalignment="center",
+                transform=ax_sil.transAxes,
+                color="gray",
+            )
+
+        ax_sil.set_title(f"k={k} Silhouette Scores")
+        ax_sil.set_ylabel("Density")
+        ax_sil.grid(True, linestyle="--", alpha=0.7)
+        ax_sil.legend()
+        ax_sil.set_xlim(fixed_sil_xlim)  # Apply fixed x-axis limits
+
+        # --- Calinski-Harabasz Score Plots ---
+        ax_ch = axes[i, 1]
+
+        # Filter out NaN values for plotting KDEs
+        observed_ch = calinski_harabasz_scores[k - 2, :]
+        null_ch = null_calinski_harabasz_scores[k - 2, :]
+
+        observed_ch_cleaned = observed_ch[~np.isnan(observed_ch)]
+        null_ch_cleaned = null_ch[~np.isnan(null_ch)]
+
+        if observed_ch_cleaned.size > 1:
+            sns.kdeplot(
+                observed_ch_cleaned, fill=True, color="red", ax=ax_ch, label="Observed"
+            )
+        else:
+            ax_ch.text(
+                0.5,
+                0.5,
+                "Not enough observed data",
+                horizontalalignment="center",
+                verticalalignment="center",
+                transform=ax_ch.transAxes,
+                color="gray",
+            )
+
+        if null_ch_cleaned.size > 1:
+            sns.kdeplot(
+                null_ch_cleaned, fill=True, color="skyblue", ax=ax_ch, label="Null"
+            )
+        else:
+            ax_ch.text(
+                0.5,
+                0.3,
+                "Not enough null data",
+                horizontalalignment="center",
+                verticalalignment="center",
+                transform=ax_ch.transAxes,
+                color="gray",
+            )
+
+        ax_ch.set_title(f"k={k} Calinski-Harabasz Scores")
+        # Only set x-label on the bottom row
+        if i == num_k - 1:
+            ax_sil.set_xlabel("Score Value")
+            ax_ch.set_xlabel("Score Value")
+        ax_ch.set_ylabel("Density")
+        ax_ch.grid(True, linestyle="--", alpha=0.7)
+        ax_ch.legend()
+        ax_ch.set_xlim(fixed_ch_xlim)  # Apply fixed x-axis limits
+
+        plt.tight_layout()
+    plt.close
+    plt.savefig(
+        project_path
+        / f"Results/MA_Clustering/{meta_name}_clustering_metrics_{correlation_type}_hc_{linkage_method}_distributions.png"
+    )
 
     # --- Laird/Riedel Metrics Plot ---
     fig, ax1 = plt.subplots(figsize=(12, 6))
