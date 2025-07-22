@@ -182,7 +182,7 @@ def check_coordinates_are_numbers(df):
 
     # Exit if any non-numeric coordinates were found; otherwise, reset index and return df
     if all_coord_numbers_flag == 0:
-        sys.exit()
+        sys.exit(-1)
     else:
         return df.reset_index(drop=True)
 
@@ -695,11 +695,11 @@ def validate_config(config):
                     },
                     "clustering_method": {
                         "type": "string",
-                        "enum": ["hierarchical", "kmeans"],
+                        "enum": ["hierarchical", "kmedoids"],
                     },
                     "linkage_method": {
                         "type": "string",
-                        "enum": ["complete", "average", "ward"],
+                        "enum": ["complete", "average"],
                     },
                     "use_pooled_std": {"type": "boolean"},
                 },

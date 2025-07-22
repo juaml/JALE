@@ -62,7 +62,7 @@ clustering_parameters:
   sampling_iterations: 1000 # Default: 1000
   null_iterations: 5000 # Default: 5000
   correlation_type: "spearman" # Default: "spearman"; Options: "spearman", "pearson"
-  clustering_method: "hierarchical" # Default: "hierarchical"; Options: "hierarchical", "kmeans"
-  linkage_method: "complete" # Default: "complete"; Options: "complete", "average", "ward"
+  clustering_method: "hierarchical" # Default: "hierarchical"; Options: "hierarchical", "kmedoids"
+  linkage_method: "complete" # Default: "complete"; Options: "complete", "average"
   use_pooled_std: False # Default: False
 # DO NOT CHANGE THESE IF YOU ARE NOT AN ALE EXPERT

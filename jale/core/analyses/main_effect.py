@@ -238,6 +238,4 @@ def main_effect(
             else:
                 logger.info("TFCE: no significant effect found.")
 
-    else:
-        pass
-        logger.info(f"{meta_name} - done!")
+    logger.info(f"{meta_name} - done!")

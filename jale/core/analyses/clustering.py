@@ -11,7 +11,7 @@ from jale.core.utils.compute import compute_ma
 from jale.core.utils.folder_setup import folder_setup
 from jale.core.utils.hierarchical import hierarchical_clustering_pipeline
 from jale.core.utils.kernel import create_kernel_array
-from jale.core.utils.kmeans import kmeans_clustering_pipeline
+from jale.core.utils.kmedoids import kmedoids_clustering_pipeline
 from jale.core.utils.template import GM_PRIOR
 
 logger = logging.getLogger("ale_logger")
@@ -86,14 +86,15 @@ def clustering(
             null_iterations=null_iterations,
             use_pooled_std=use_pooled_std,
         )
-    elif clustering_method == "kmeans":
-        logger.info(f"{meta_name} - kmeans clustering")
-        kmeans_clustering_pipeline(
+    elif clustering_method == "kmedoids":
+        logger.info(f"{meta_name} - kmedoids clustering")
+        kmedoids_clustering_pipeline(
             project_path=project_path,
             exp_df=exp_df,
             meta_name=meta_name,
             kernels=kernels,
             correlation_type=correlation_type,
+            linkage_method=linkage_method,
             correlation_matrix=correlation_matrix,
             max_clusters=max_clusters,
             subsample_fraction=subsample_fraction,
