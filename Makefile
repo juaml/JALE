@@ -11,28 +11,28 @@ all: build
 
 # Clean up build artifacts and caches
 clean:
-    @echo "Cleaning __pycache__ directories..."
-    find . -type d -name "__pycache__" -exec rm -rf {} +
-    @echo "Cleaning build and distribution directories..."
-    rm -rf build dist *.egg-info
+	@echo "Cleaning __pycache__ directories..."
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	@echo "Cleaning build and distribution directories..."
+	rm -rf build dist *.egg-info
 
 # Build the sdist and wheel. Depends on 'clean' to ensure a fresh build.
 build: clean
-    @echo "Building the package..."
-    $(BUILD_COMMAND)
-    @echo "Build process completed. Artifacts are in dist/"
+	@echo "Building the package..."
+	$(BUILD_COMMAND)
+	@echo "Build process completed. Artifacts are in dist/"
 
 # A placeholder for your test suite (e.g., using pytest)
 test:
-    @echo "Running tests..."
-    $(PYTHON) -m pytest
+	@echo "Running tests..."
+	$(PYTHON) -m pytest
 
 # --- Publishing Targets ---
 
 # Target to upload to TestPyPI for staging
 publish-test: build
-    @echo "Uploading package to TestPyPI..."
-    $(TWINE) upload --repository testpypi dist/*
+	@echo "Uploading package to TestPyPI..."
+	$(TWINE) upload --repository testpypi dist/*
 
 # Target to upload to the official PyPI
 # This is the "production" release command.
