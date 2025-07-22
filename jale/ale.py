@@ -1,15 +1,15 @@
 import logging
 from pathlib import Path
 
-from .core.analyses.balanced_contrast import balanced_contrast
-from .core.analyses.clustering import clustering
-from .core.analyses.contrast import contrast
-from .core.analyses.main_effect import main_effect
-from .core.analyses.probabilistic import probabilistic_ale
-from .core.analyses.roi import roi_ale
-from .core.utils.compile_experiments import compile_experiments
-from .core.utils.contribution import contribution
-from .core.utils.input import (
+from jale.core.analyses.balanced_contrast import balanced_contrast
+from jale.core.analyses.clustering import clustering
+from jale.core.analyses.contrast import contrast
+from jale.core.analyses.main_effect import main_effect
+from jale.core.analyses.probabilistic import probabilistic_ale
+from jale.core.analyses.roi import roi_ale
+from jale.core.utils.compile_experiments import compile_experiments
+from jale.core.utils.contribution import contribution
+from jale.core.utils.input import (
     check_for_exp_independence,
     check_params,
     determine_target_n,
@@ -17,7 +17,7 @@ from .core.utils.input import (
     load_dataframes,
     setup_contrast_data,
 )
-from .core.utils.logger import setup_logger
+from jale.core.utils.logger import setup_logger
 
 
 def run_ale(yaml_path=None):
