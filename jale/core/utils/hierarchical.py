@@ -157,11 +157,7 @@ def compute_hc_subsampling(
         Z = linkage(condensed_distance, method=linkage_method)
 
         # Calculate relative difference in cophenetic distance for the whole hierarchy
-        rdc = calculate_rel_diff_cophenetic(Z, max_clusters)
-        # Store results, aligning index with k (k=3 to max_clusters)
-        rel_diff_cophenetic[:, i] = [
-            rdc.get(k, np.nan) for k in range(3, max_clusters + 1)
-        ]
+        rel_diff_cophenetic[:, i] = calculate_rel_diff_cophenetic(Z, max_clusters)
 
         for k in range(2, max_clusters + 1):
             cluster_label = fcluster(Z, k, criterion="maxclust")
@@ -199,27 +195,17 @@ def calculate_rel_diff_cophenetic(linkage_matrix, max_clusters):
     cophenetic_distances = linkage_matrix[:, 2]
     rev_cophenetic_distances = cophenetic_distances[::-1]
 
-    rel_diff_cophenetic = {}
-    # Linkage matrix has n-1 rows for n samples.
-    # We can evaluate transitions up to n-1 clusters.
-    num_possible_clusters = len(rev_cophenetic_distances)
+    rel_diff_cophenetic = []
 
-    for i in range(num_possible_clusters - 1):
-        num_clusters_to = (
-            i + 3
-        )  # Corresponds to transition to k+1 clusters in the paper's plot
-        if num_clusters_to > max_clusters:
-            break
-
-        # The denominator is the cophenetic distance when merging from k+1 to k clusters
+    for i in range(max_clusters - 2):
         denominator = rev_cophenetic_distances[i]
         if denominator > 1e-12:  # Avoid division by zero
             # The numerator is the difference between k+1->k and k->k-1 merges
             numerator = rev_cophenetic_distances[i] - rev_cophenetic_distances[i + 1]
             dc = numerator / denominator
-            rel_diff_cophenetic[num_clusters_to] = dc
+            rel_diff_cophenetic.append(dc)  # Store dc
         else:
-            rel_diff_cophenetic[num_clusters_to] = 0
+            rel_diff_cophenetic.append(0)  # Avoid division by zero = 0
 
     return rel_diff_cophenetic
 
@@ -496,8 +482,36 @@ def save_hc_metrics(
     )
     metrics_df.to_csv(
         project_path
-        / f"Results/MA_Clustering/{meta_name}_clustering_metrics_{correlation_type}_hc_{linkage_method}.csv",
+        / f"Results/MA_Clustering/metrics/{meta_name}_clustering_metrics_{correlation_type}_hc_{linkage_method}.csv",
         index=False,
+    )
+
+    pd.DataFrame(silhouette_scores.T).to_csv(
+        project_path
+        / f"Results/MA_Clustering/metrics/{meta_name}_silhouette_scores_{correlation_type}_hc_{linkage_method}.csv",
+        index=False,
+        header=[f"k={k}" for k in range(2, max_k + 1)],
+    )
+
+    pd.DataFrame(calinski_harabasz_scores.T).to_csv(
+        project_path
+        / f"Results/MA_Clustering/metrics/{meta_name}_calinski_harabasz_scores_{correlation_type}_hc_{linkage_method}.csv",
+        index=False,
+        header=[f"k={k}" for k in range(2, max_k + 1)],
+    )
+
+    pd.DataFrame(rel_diff_cophenetic.T).to_csv(
+        project_path
+        / f"Results/MA_Clustering/metrics/{meta_name}_rel_diff_cophenetic_{correlation_type}_hc_{linkage_method}.csv",
+        index=False,
+        header=[f"k={k}" for k in range(3, max_k + 1)],
+    )
+
+    pd.DataFrame(exp_separation_density.T).to_csv(
+        project_path
+        / f"Results/MA_Clustering/metrics/{meta_name}_exp_separation_density_{correlation_type}_hc_{linkage_method}.csv",
+        index=False,
+        header=[f"k={k}" for k in range(3, max_k + 1)],
     )
 
 

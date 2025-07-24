@@ -4,11 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scipy.cluster.hierarchy import (
-    fcluster,
-    linkage,
-)
-from scipy.spatial.distance import squareform
 from scipy.stats import entropy, spearmanr
 from sklearn.metrics import calinski_harabasz_score, mutual_info_score, silhouette_score
 from sklearn_extra.cluster import KMedoids
@@ -38,6 +33,7 @@ def kmedoids_clustering_pipeline(
     (
         silhouette_scores,
         calinski_harabasz_scores,
+        variation_of_information,
         cluster_labels,
     ) = compute_kmedoids_subsampling(
         correlation_matrix=correlation_matrix,
@@ -65,15 +61,9 @@ def kmedoids_clustering_pipeline(
         use_pooled_std=use_pooled_std,
     )
 
-    vi_scores, hierarchy_indices = compute_kmedoids_comparative_metrics(
-        correlation_matrix=correlation_matrix,
-        max_clusters=max_clusters,
-    )
-
     logger.info(f"{meta_name} - calculating final cluster labels")
-    hamming_distance_cluster_labels = compute_hamming_distance_hc(
+    hamming_distance_cluster_labels = compute_hamming_distance_kmedoids(
         cluster_labels=cluster_labels,
-        linkage_method=linkage_method,
         max_clusters=max_clusters,
     )
     logger.info(f"{meta_name} - creating output and saving")
@@ -92,8 +82,7 @@ def kmedoids_clustering_pipeline(
         silhouette_scores_z=silhouette_scores_z,
         calinski_harabasz_scores=calinski_harabasz_scores,
         calinski_harabasz_scores_z=calinski_harabasz_scores_z,
-        vi_scores=vi_scores,
-        hierarchy_indices=hierarchy_indices,
+        vi_scores=variation_of_information,
         correlation_type=correlation_type,
     )
     plot_kmedoids_metrics(
@@ -105,24 +94,21 @@ def kmedoids_clustering_pipeline(
         calinski_harabasz_scores=calinski_harabasz_scores,
         null_calinski_harabasz_scores=null_calinski_harabasz_scores,
         calinski_harabasz_scores_z=calinski_harabasz_scores_z,
-        vi_scores=vi_scores,
-        hierarchy_indices=hierarchy_indices,
+        vi_scores=variation_of_information,
         correlation_type=correlation_type,
         max_clusters=max_clusters,
     )
 
 
 def compute_kmedoids_subsampling(
-    correlation_matrix,
-    max_clusters,
-    subsample_fraction,
-    sampling_iterations,
+    correlation_matrix, max_clusters, subsample_fraction, sampling_iterations
 ):
     correlation_distance = 1 - correlation_matrix
     np.fill_diagonal(correlation_distance, 0)
 
     silhouette_scores = np.empty((max_clusters - 1, sampling_iterations))
     calinski_harabasz_scores = np.empty((max_clusters - 1, sampling_iterations))
+    variation_of_information = np.empty((max_clusters - 2, sampling_iterations))
     cluster_labels = np.full(
         (max_clusters - 1, correlation_matrix.shape[0], sampling_iterations), np.nan
     )
@@ -133,8 +119,8 @@ def compute_kmedoids_subsampling(
         sample_n=sampling_iterations,
     )
     # Iterate over different values of k, compute cluster metrics
-    for k in range(2, max_clusters + 1):
-        for i in range(sampling_iterations):
+    for i in range(sampling_iterations):
+        for k in range(2, max_clusters + 1):
             # Resample indices for subsampling
             resampled_indices = subsamples[i]
             resampled_correlation = correlation_matrix[
@@ -151,13 +137,64 @@ def compute_kmedoids_subsampling(
             )
             silhouette_scores[k - 2, i] = silhouette_score
             calinski_harabasz_scores[k - 2, i] = calinski_harabasz_score
-            cluster_labels[k - 2, resampled_indices, i] = cluster_label
+            cluster_labels[k - 2, resampled_indices, i] = cluster_label.astype(np.int64)
+
+            if k >= 3:
+                variation_of_information[k - 3, i] = compute_variation_of_information(
+                    cluster_labels_prev=cluster_labels[
+                        k - 3, resampled_indices, i
+                    ].astype(int),
+                    cluster_labels_current=cluster_labels[
+                        k - 2, resampled_indices, i
+                    ].astype(int),
+                )
 
     return (
         silhouette_scores,
         calinski_harabasz_scores,
+        variation_of_information,
         cluster_labels,
     )
+
+
+def compute_kmedoids_clustering(correlation_matrix, k):
+    """
+    Perform k-medoids clustering on the given correlation matrix and compute clustering metrics.
+
+    Parameters:
+    correlation_matrix (ndarray): A symmetric matrix representing the correlation between data points.
+    k (int): The number of clusters to form.
+
+    Returns:
+    tuple: A tuple containing the silhouette score, Calinski-Harabasz index, and cluster labels.
+    """
+
+    distance_matrix = 1 - correlation_matrix
+    np.fill_diagonal(distance_matrix, 0)
+
+    kmedoids = KMedoids(
+        n_clusters=k,
+        metric="precomputed",
+        method="pam",
+        random_state=0,
+    )
+    cluster_labels = kmedoids.fit_predict(distance_matrix)
+
+    silhouette = silhouette_score(distance_matrix, cluster_labels, metric="precomputed")
+    calinski_harabasz = calinski_harabasz_score(1 - distance_matrix, cluster_labels)
+
+    return silhouette, calinski_harabasz, cluster_labels
+
+
+def compute_variation_of_information(cluster_labels_prev, cluster_labels_current):
+    """
+    Computes the variation of information (VI) between two clustering solutions at k-1 and k.
+    """
+    mutual_info = mutual_info_score(cluster_labels_prev, cluster_labels_current)
+    entropy_k = entropy(np.bincount(cluster_labels_prev))
+    entropy_k_next = entropy(np.bincount(cluster_labels_current))
+
+    return entropy_k + entropy_k_next - 2 * mutual_info
 
 
 def compute_kmedoids_null(
@@ -225,30 +262,6 @@ def compute_kmedoids_null(
     return (null_silhouette_scores, null_calinski_harabasz_scores)
 
 
-def compute_kmedoids_clustering(correlation_matrix, k):
-    """
-    Perform k-medoids clustering on the given correlation matrix and compute clustering metrics.
-
-    Parameters:
-    correlation_matrix (ndarray): A symmetric matrix representing the correlation between data points.
-    k (int): The number of clusters to form.
-
-    Returns:
-    tuple: A tuple containing the silhouette score, Calinski-Harabasz index, and cluster labels.
-    """
-
-    distance_matrix = 1 - correlation_matrix
-    np.fill_diagonal(distance_matrix, 0)
-
-    kmedoids = KMedoids(n_clusters=k, metric="precomputed", random_state=0)
-    cluster_labels = kmedoids.fit_predict(distance_matrix)
-
-    silhouette = silhouette_score(distance_matrix, cluster_labels, metric="precomputed")
-    calinski_harabasz = calinski_harabasz_score(1 - distance_matrix, cluster_labels)
-
-    return silhouette, calinski_harabasz, cluster_labels
-
-
 def compute_kmedoids_metrics_z(
     silhouette_scores,
     calinski_harabasz_scores,
@@ -291,84 +304,21 @@ def compute_kmedoids_metrics_z(
     return silhouette_z, calinski_harabasz_z
 
 
-def compute_variation_of_information(cluster_labels_prev, cluster_labels_current):
-    """
-    Computes the variation of information (VI) between two clustering solutions at k-1 and k.
-    """
-    mutual_info = mutual_info_score(cluster_labels_prev, cluster_labels_current)
-    entropy_k = entropy(np.bincount(cluster_labels_prev))
-    entropy_k_next = entropy(np.bincount(cluster_labels_current))
-
-    return entropy_k + entropy_k_next - 2 * mutual_info
-
-
-def compute_hierarchy_index(cluster_labels_prev, cluster_labels_current):
-    """
-    Computes the hierarchy index, measuring how clusters split when increasing k.
-
-    Parameters:
-    cluster_labels_prev: array - Cluster assignments for k-1 clusters
-    cluster_labels_current: array - Cluster assignments for k clusters
-    """
-    unique_prev_clusters = np.unique(cluster_labels_prev)
-
-    split_counts = []
-    for cluster in unique_prev_clusters:
-        mask = cluster_labels_prev == cluster
-        unique_splits = len(np.unique(cluster_labels_current[mask]))
-        split_counts.append(unique_splits)
-
-    return np.mean(split_counts)
-
-
-def compute_kmedoids_comparative_metrics(correlation_matrix, max_clusters):
-    """
-    Performs kmedoids clustering on the full correlation matrix for each k and computes
-    clustering metrics: variation of information (VI) and hierarchy index.
-
-    Parameters:
-    correlation_matrix: 2D numpy array - Correlation matrix
-    max_clusters: int - Maximum number of clusters to evaluate
-
-    Returns:
-    Dictionary containing computed metrics for each k.
-    """
-    correlation_distance = 1 - correlation_matrix
-    np.fill_diagonal(correlation_distance, 0)
-
-    vi_scores = [0]
-    hierarchy_indices = [0]
-    prev_labels = None
-    for k in range(2, max_clusters + 1):
-        kmedoids = KMedoids(n_clusters=k).fit(correlation_distance)
-        cluster_labels = kmedoids.labels_
-
-        if prev_labels is not None:
-            vi_score = compute_variation_of_information(prev_labels, cluster_labels)
-            hierarchy_index = compute_hierarchy_index(prev_labels, cluster_labels)
-            vi_scores.append(vi_score)
-            hierarchy_indices.append(hierarchy_index)
-
-        prev_labels = cluster_labels
-
-    return vi_scores, hierarchy_indices
-
-
-def compute_hamming_distance_hc(
-    cluster_labels, max_clusters, linkage_method="complete"
-):
+def compute_hamming_distance_kmedoids(cluster_labels, max_clusters):
     hamming_distance_cluster_labels = np.empty(
         (max_clusters - 1, cluster_labels.shape[1])
     )
+
     for k in range(2, max_clusters + 1):
-        hamming_distance = compute_hamming_with_nan(
-            cluster_labels=cluster_labels[k - 2]
+        hamming_distance = compute_hamming_with_nan(cluster_labels[k - 2])
+
+        # Fit KMedoids on the precomputed distance matrix
+        kmedoids = KMedoids(
+            n_clusters=k, metric="precomputed", method="pam", random_state=0
         )
-        condensed_distance = squareform(hamming_distance, checks=False)
-        linkage_matrix = linkage(condensed_distance, method=linkage_method)
-        hamming_distance_cluster_labels[k - 2] = fcluster(
-            linkage_matrix, t=k, criterion="maxclust"
-        )
+        labels = kmedoids.fit_predict(hamming_distance)
+
+        hamming_distance_cluster_labels[k - 2] = labels
 
     return hamming_distance_cluster_labels
 
@@ -434,26 +384,48 @@ def save_kmedoids_metrics(
     calinski_harabasz_scores,
     calinski_harabasz_scores_z,
     vi_scores,
-    hierarchy_indices,
     correlation_type,
 ):
+    max_k = len(silhouette_scores) + 1
     metrics_df = pd.DataFrame(
         {
-            "Number of Clusters": range(2, len(silhouette_scores) + 2),
+            "Number of Clusters": range(2, max_k + 1),
             "Silhouette Scores": np.average(silhouette_scores, axis=1),
             "Silhouette Scores SD": np.std(silhouette_scores, axis=1),
             "Silhouette Scores Z": silhouette_scores_z,
             "Calinski-Harabasz Scores": np.average(calinski_harabasz_scores, axis=1),
             "Calinski-Harabasz Scores SD": np.std(calinski_harabasz_scores, axis=1),
             "Calinski-Harabasz Scores Z": calinski_harabasz_scores_z,
-            "Variation of Information": vi_scores,
-            "Hierarchy Index": hierarchy_indices,
+            "Variation of Information": np.concatenate(
+                [[0], np.average(vi_scores, axis=1)]
+            ),
         }
     )
     metrics_df.to_csv(
         project_path
         / f"Results/MA_Clustering/{meta_name}_clustering_metrics_{correlation_type}_kmedoids.csv",
         index=False,
+    )
+
+    pd.DataFrame(silhouette_scores.T).to_csv(
+        project_path
+        / f"Results/MA_Clustering/metrics/{meta_name}_silhouette_scores_{correlation_type}_kmedoids.csv",
+        index=False,
+        header=[f"k={k}" for k in range(2, max_k + 1)],
+    )
+
+    pd.DataFrame(calinski_harabasz_scores.T).to_csv(
+        project_path
+        / f"Results/MA_Clustering/metrics/{meta_name}_calinski_harabasz_scores_{correlation_type}_kmedoids.csv",
+        index=False,
+        header=[f"k={k}" for k in range(2, max_k + 1)],
+    )
+
+    pd.DataFrame(vi_scores.T).to_csv(
+        project_path
+        / f"Results/MA_Clustering/metrics/{meta_name}_vi_scores_{correlation_type}_kmedoids.csv",
+        index=False,
+        header=[f"k={k}" for k in range(3, max_k + 1)],
     )
 
 
@@ -467,7 +439,6 @@ def plot_kmedoids_metrics(
     null_calinski_harabasz_scores,
     calinski_harabasz_scores_z,
     vi_scores,
-    hierarchy_indices,
     correlation_type,
     max_clusters,
 ):
@@ -765,32 +736,20 @@ def plot_kmedoids_metrics(
     )
 
     # --- Laird/Riedel Metrics Plot ---
-    fig, ax1 = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(12, 6))
     k_range_special = range(3, max_clusters + 1)
 
     color = "tab:blue"
-    ax1.set_xlabel("Number of Clusters Transitioning To")
-    ax1.set_ylabel("Variation of Information", color=color)
-    ax1.plot(k_range_special, vi_scores[1:], "o-", color=color)
-    ax1.tick_params(axis="y", labelcolor=color)
-    ax1.grid(True, axis="x")
+    ax.set_xlabel("Number of Clusters")
+    ax.set_ylabel("Variation of Information", color=color)
+    ax.plot(k_range_special, np.average(vi_scores, axis=1), "o-", color=color)
+    ax.tick_params(axis="y", labelcolor=color)
+    ax.grid(True)
 
-    ax2 = ax1.twinx()
-    color = "tab:red"
-    ax2.set_ylabel("Hierarchy Indices", color=color)
-    # The density metric is for the transition from k to k+1, so it aligns with k_range_special
-    ax2.plot(
-        k_range_special,
-        hierarchy_indices[1:],
-        "s-",
-        color=color,
-    )
-    ax2.tick_params(axis="y", labelcolor=color)
-
-    plt.title("Cluster Evaluation Metrics")
+    plt.title("Variation of Information Across Cluster Numbers")
     fig.tight_layout()
     plt.savefig(
         project_path
-        / f"Results/MA_Clustering/{meta_name}_clustering_metrics_{correlation_type}_kmedoids_comparative.png"
+        / f"Results/MA_Clustering/{meta_name}_variation_of_information_{correlation_type}_kmedoids.png"
     )
     plt.close()

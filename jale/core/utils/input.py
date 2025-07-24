@@ -470,6 +470,7 @@ def read_experiment_info(filename, pool_experiments):
             "Coordinates",
         ]
     ]
+    check_for_exp_independence(exp_info)
 
     # Save processed experiment data to an Excel file
     # exp_info.to_excel("experiment_info_concat.xlsx", index=False)
@@ -506,9 +507,9 @@ def check_for_exp_independence(exp_df):
     """
     duplicate_mask = exp_df.duplicated(subset="Articles", keep=False)
     if duplicate_mask.any():
-        logger.warning("Atleast one Article is associated with multiple experiments.")
-        logger.warning("Please check carefully for independence of experiments.")
         logger.warning(
+            "At least one Article is associated with multiple experiments. "
+            "Please check carefully for independence of experiments. "
             "If not independent please change config and set pool_experiments to 'True'."
         )
         # Optionally, list the problematic articles and their associated tags

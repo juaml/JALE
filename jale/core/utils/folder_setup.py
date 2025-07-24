@@ -60,6 +60,7 @@ def folder_setup(path, type_of_analysis):
             "Results/MA_Clustering/tmp",
             "Results/MA_Clustering/labels",
             "Results/MA_Clustering/dendograms",
+            "Results/MA_Clustering/metrics",
         ],
         "ROI": [
             "Results/MainEffect/ROI",

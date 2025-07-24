@@ -8,8 +8,8 @@ project:
 # DO NOT CHANGE THESE IF YOU ARE NOT AN ALE EXPERT!
 parameters:
   
-  # If enabled pools multiple experiments from same paper into one experiment; Default: True
-  pool_experiments: True
+  # If enabled pools multiple experiments from same paper into one experiment; Default: False
+  pool_experiments: False
 
   # TFCE is a method for multiple comparison correction (Frahm et al., 2022)
   tfce_enabled: True
