@@ -258,10 +258,15 @@ def compute_hc_null(
         # Compute the meta-analysis result with subsampled kernels
         null_ma = compute_ma(shuffled_coords, sampled_kernels)
         ma_gm_masked = null_ma[:, GM_PRIOR]
+        # Set entire row to np.nan only if all values in the row are zero
+        ma_gm_masked_nan = ma_gm_masked.copy()
+        row_is_zero = np.all(ma_gm_masked_nan == 0, axis=1)
+        ma_gm_masked_nan[row_is_zero, :] = np.nan
         if correlation_type == "spearman":
-            correlation_matrix, _ = spearmanr(ma_gm_masked, axis=1)
+            correlation_matrix, _ = spearmanr(ma_gm_masked_nan, axis=1)
         elif correlation_type == "pearson":
-            correlation_matrix = np.corrcoef(ma_gm_masked)
+            correlation_matrix = np.corrcoef(ma_gm_masked_nan)
+        # Replace any NaNs in the correlation matrix with zero for further calculations
         correlation_matrix = np.nan_to_num(
             correlation_matrix, nan=0, posinf=0, neginf=0
         )
@@ -294,15 +299,17 @@ def compute_hierarchical_clustering(correlation_matrix, k, linkage_method):
     Z = linkage(condensed_distance, method=linkage_method)
     cluster_labels = fcluster(Z, k, criterion="maxclust")
 
-    # Silhouette Score
-    silhouette = silhouette_score(
-        distance_matrix,
-        cluster_labels,
-        metric="precomputed",
-    )
-
-    # Calinski-Harabasz Index
-    calinski_harabasz = calinski_harabasz_score(correlation_matrix, cluster_labels)
+    # Safeguard: If only one unique cluster label, set metrics to np.nan
+    if len(np.unique(cluster_labels)) < 2:
+        silhouette = np.nan
+        calinski_harabasz = np.nan
+    else:
+        silhouette = silhouette_score(
+            distance_matrix,
+            cluster_labels,
+            metric="precomputed",
+        )
+        calinski_harabasz = calinski_harabasz_score(correlation_matrix, cluster_labels)
 
     return (
         silhouette,
