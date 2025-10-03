@@ -107,6 +107,20 @@ def clustering(
 def plot_cor_matrix(
     project_path, meta_name, correlation_matrix, correlation_type, linkage_method
 ):
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(correlation_matrix, cmap="RdBu_r", center=0, vmin=-1, vmax=1)
+
+    # Add title and labels
+    plt.title("Correlation Matrix with Custom Colormap")
+    plt.xlabel("Experiments")
+    plt.xticks(ticks=[])
+    plt.ylabel("Experiments")
+    plt.yticks(ticks=[])
+
+    plt.savefig(
+        project_path
+        / f"Results/MA_Clustering/{meta_name}_correlation_matrix_{correlation_type}_{linkage_method}.png"
+    )
     # Perform hierarchical clustering
     linkage_matrix = linkage(correlation_matrix, method=linkage_method)
 
@@ -119,7 +133,7 @@ def plot_cor_matrix(
     sns.heatmap(sorted_correlation_matrix, cmap="RdBu_r", center=0, vmin=-1, vmax=1)
 
     # Add title and labels
-    plt.title("Correlation Matrix with Custom Colormap")
+    plt.title("Sorted Correlation Matrix with Custom Colormap")
     plt.xlabel("Experiments")
     plt.xticks(ticks=[])
     plt.ylabel("Experiments")
@@ -127,5 +141,5 @@ def plot_cor_matrix(
 
     plt.savefig(
         project_path
-        / f"Results/MA_Clustering/{meta_name}_correlation_matrix_{correlation_type}_{linkage_method}.png"
+        / f"Results/MA_Clustering/{meta_name}_sorted_correlation_matrix_{correlation_type}_{linkage_method}.png"
     )
