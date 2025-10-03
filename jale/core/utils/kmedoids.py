@@ -238,10 +238,14 @@ def compute_kmedoids_null(
         # Compute the meta-analysis result with subsampled kernels
         null_ma = compute_ma(shuffled_coords, sampled_kernels)
         ma_gm_masked = null_ma[:, GM_PRIOR]
+        # Set entire row to np.nan only if all values in the row are zero
+        ma_gm_masked_nan = ma_gm_masked.copy()
+        row_is_zero = np.all(ma_gm_masked_nan == 0, axis=1)
+        ma_gm_masked_nan[row_is_zero, :] = np.nan
         if correlation_type == "spearman":
-            correlation_matrix, _ = spearmanr(ma_gm_masked, axis=1)
+            correlation_matrix, _ = spearmanr(ma_gm_masked_nan, axis=1)
         elif correlation_type == "pearson":
-            correlation_matrix = np.corrcoef(ma_gm_masked)
+            correlation_matrix = np.corrcoef(ma_gm_masked_nan)
         correlation_matrix = np.nan_to_num(
             correlation_matrix, nan=0, posinf=0, neginf=0
         )
