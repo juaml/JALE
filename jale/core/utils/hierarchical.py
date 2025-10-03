@@ -40,7 +40,6 @@ def hierarchical_clustering_pipeline(
     (
         silhouette_scores,
         calinski_harabasz_scores,
-        rel_diff_cophenetic,
         exp_separation_density,
         cluster_labels,
     ) = compute_hc_subsampling(
@@ -93,7 +92,6 @@ def hierarchical_clustering_pipeline(
         silhouette_scores_z=silhouette_scores_z,
         calinski_harabasz_scores=calinski_harabasz_scores,
         calinski_harabasz_scores_z=calinski_harabasz_scores_z,
-        rel_diff_cophenetic=rel_diff_cophenetic,
         exp_separation_density=exp_separation_density,
         correlation_type=correlation_type,
         linkage_method=linkage_method,
@@ -107,7 +105,6 @@ def hierarchical_clustering_pipeline(
         calinski_harabasz_scores=calinski_harabasz_scores,
         null_calinski_harabasz_scores=null_calinski_harabasz_scores,
         calinski_harabasz_scores_z=calinski_harabasz_scores_z,
-        rel_diff_cophenetic=rel_diff_cophenetic,
         exp_separation_density=exp_separation_density,
         correlation_type=correlation_type,
         linkage_method=linkage_method,
@@ -132,7 +129,6 @@ def compute_hc_subsampling(
 ):
     silhouette_scores = np.empty((max_clusters - 1, sampling_iterations))
     calinski_harabasz_scores = np.empty((max_clusters - 1, sampling_iterations))
-    rel_diff_cophenetic = np.empty((max_clusters - 2, sampling_iterations))
     exp_separation_density = np.empty((max_clusters - 2, sampling_iterations))
     cluster_labels = np.full(
         (max_clusters - 1, correlation_matrix.shape[0], sampling_iterations), np.nan
@@ -157,7 +153,7 @@ def compute_hc_subsampling(
         Z = linkage(condensed_distance, method=linkage_method)
 
         # Calculate relative difference in cophenetic distance for the whole hierarchy
-        rel_diff_cophenetic[:, i] = calculate_rel_diff_cophenetic(Z, max_clusters)
+        # rel_diff_cophenetic[:, i] = calculate_rel_diff_cophenetic(Z, max_clusters)
 
         for k in range(2, max_clusters + 1):
             cluster_label = fcluster(Z, k, criterion="maxclust")
@@ -184,30 +180,9 @@ def compute_hc_subsampling(
     return (
         silhouette_scores,
         calinski_harabasz_scores,
-        rel_diff_cophenetic,
         exp_separation_density,
         cluster_labels,
     )
-
-
-def calculate_rel_diff_cophenetic(linkage_matrix, max_clusters):
-    """Calculates the relative difference in cophenetic distance."""
-    cophenetic_distances = linkage_matrix[:, 2]
-    rev_cophenetic_distances = cophenetic_distances[::-1]
-
-    rel_diff_cophenetic = []
-
-    for i in range(max_clusters - 2):
-        denominator = rev_cophenetic_distances[i]
-        if denominator > 1e-12:  # Avoid division by zero
-            # The numerator is the difference between k+1->k and k->k-1 merges
-            numerator = rev_cophenetic_distances[i] - rev_cophenetic_distances[i + 1]
-            dc = numerator / denominator
-            rel_diff_cophenetic.append(dc)  # Store dc
-        else:
-            rel_diff_cophenetic.append(0)  # Avoid division by zero = 0
-
-    return rel_diff_cophenetic
 
 
 def calculate_exp_separation_density(linkage_matrix, k):
@@ -456,7 +431,6 @@ def save_hc_metrics(
     silhouette_scores_z,
     calinski_harabasz_scores,
     calinski_harabasz_scores_z,
-    rel_diff_cophenetic,
     exp_separation_density,
     correlation_type,
     linkage_method,
@@ -472,9 +446,6 @@ def save_hc_metrics(
             "Calinski-Harabasz Scores SD": np.std(calinski_harabasz_scores, axis=1),
             "Calinski-Harabasz Scores Z": calinski_harabasz_scores_z,
             # Pad with NaN for k=2 as metrics start at k=3
-            "Relative Difference Cophenetic": np.concatenate(
-                ([np.nan], np.nanmean(rel_diff_cophenetic, axis=1))
-            ),
             "Experiment Separation Density": np.concatenate(
                 ([np.nan], np.nanmean(exp_separation_density, axis=1))
             ),
@@ -482,7 +453,7 @@ def save_hc_metrics(
     )
     metrics_df.to_csv(
         project_path
-        / f"Results/MA_Clustering/metrics/{meta_name}_clustering_metrics_{correlation_type}_hc_{linkage_method}.csv",
+        / f"Results/MA_Clustering/{meta_name}_clustering_metrics_{correlation_type}_hc_{linkage_method}.csv",
         index=False,
     )
 
@@ -498,13 +469,6 @@ def save_hc_metrics(
         / f"Results/MA_Clustering/metrics/{meta_name}_calinski_harabasz_scores_{correlation_type}_hc_{linkage_method}.csv",
         index=False,
         header=[f"k={k}" for k in range(2, max_k + 1)],
-    )
-
-    pd.DataFrame(rel_diff_cophenetic.T).to_csv(
-        project_path
-        / f"Results/MA_Clustering/metrics/{meta_name}_rel_diff_cophenetic_{correlation_type}_hc_{linkage_method}.csv",
-        index=False,
-        header=[f"k={k}" for k in range(3, max_k + 1)],
     )
 
     pd.DataFrame(exp_separation_density.T).to_csv(
@@ -524,7 +488,6 @@ def plot_hc_metrics(
     calinski_harabasz_scores,
     null_calinski_harabasz_scores,
     calinski_harabasz_scores_z,
-    rel_diff_cophenetic,
     exp_separation_density,
     correlation_type,
     linkage_method,
@@ -824,35 +787,24 @@ def plot_hc_metrics(
     )
 
     # --- Laird/Riedel Metrics Plot ---
-    fig, ax1 = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(12, 6))
     k_range_special = range(3, max_clusters + 1)
-
-    color = "tab:blue"
-    ax1.set_xlabel("Number of Clusters Transitioning To")
-    ax1.set_ylabel("Relative Difference in Cophenetic Distances", color=color)
-    ax1.plot(
-        k_range_special, np.nanmean(rel_diff_cophenetic, axis=1), "o-", color=color
-    )
-    ax1.tick_params(axis="y", labelcolor=color)
-    ax1.grid(True, axis="x")
-
-    ax2 = ax1.twinx()
     color = "tab:red"
-    ax2.set_ylabel("Experiment Separation Density", color=color)
-    # The density metric is for the transition from k to k+1, so it aligns with k_range_special
-    ax2.plot(
+    ax.set_xlabel("Number of Clusters Transitioning To")
+    ax.set_ylabel("Experiment Separation Density", color=color)
+    ax.plot(
         k_range_special,
         np.nanmean(exp_separation_density, axis=1),
         "s-",
         color=color,
     )
-    ax2.tick_params(axis="y", labelcolor=color)
-
-    plt.title("Cluster Evaluation Metrics")
+    ax.tick_params(axis="y", labelcolor=color)
+    ax.grid(True, axis="x")
+    plt.title("Experiment Separation Density")
     fig.tight_layout()
     plt.savefig(
         project_path
-        / f"Results/MA_Clustering/{meta_name}_clustering_metrics_{correlation_type}_hc_{linkage_method}_laird_riedel.png"
+        / f"Results/MA_Clustering/{meta_name}_exp_separation_density_{correlation_type}_hc_{linkage_method}_laird_riedel.png"
     )
     plt.close()
 
