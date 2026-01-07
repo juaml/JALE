@@ -20,20 +20,20 @@ classifiers = [
 ]
 dependencies = [
     "customtkinter==5.2.2",
-    "joblib>=1.3.2",
-    "nibabel>=5.2.1",
+    "joblib==1.3.2",
+    "nibabel==5.2.1",
     "numpy==1.26.4",
-    "pandas>=2.0.3",
-    "PyYAML>=6.0.2",
-    "scipy>=1.10.1",
-    "xgboost>=2.1.2",
-    "openpyxl>=3.1.5",
+    "pandas==2.0.3",
+    "PyYAML==6.0.2",
+    "scipy==1.10.1",
+    "xgboost==2.1.2",
+    "openpyxl==3.1.5",
     "scikit-learn==1.5.2",
     "scikit-learn-extra==0.3.0",
-    "matplotlib>=3.7.1",
-    "seaborn>=0.12.2",
-    "nilearn>=0.10.4",
-    "jsonschema>=4.17.3",
+    "matplotlib==3.7.1",
+    "seaborn==0.12.2",
+    "nilearn==0.10.4",
+    "jsonschema==4.17.3",
 ]
 [tool.setuptools]
 packages = { find = {} }
