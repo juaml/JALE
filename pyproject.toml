@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jale"
-version = "0.2.8"
+version = "0.2.9"
 description = "Package allowing users to run Activation Likelihood Estimation Meta-Analysis"
 readme = "README.md"
 requires-python = ">=3.9, <3.13"
