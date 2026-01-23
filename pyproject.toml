@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jale"
-version = "0.2.6"
+version = "0.2.8"
 description = "Package allowing users to run Activation Likelihood Estimation Meta-Analysis"
 readme = "README.md"
 requires-python = ">=3.9, <3.13"
@@ -28,7 +28,7 @@ dependencies = [
     "openpyxl==3.1.5",
     "scikit-learn==1.5.2",
     "scikit-learn-extra==0.3.0",
-    "matplotlib==3.7.1",
+    "matplotlib==3.10.8",
     "seaborn==0.12.2",
     "nilearn==0.10.4",
     "jsonschema==4.17.3",
