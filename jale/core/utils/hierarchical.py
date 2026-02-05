@@ -479,7 +479,7 @@ def save_hc_metrics(
         header=[f"k={k}" for k in range(2, max_k + 1)],
     )
 
-     pd.DataFrame(null_silhouette_scores.T).to_csv(
+    pd.DataFrame(null_silhouette_scores.T).to_csv(
         project_path
         / f"Results/MA_Clustering/metrics/{meta_name}_NULLsilhouette_scores_{correlation_type}_hc_{linkage_method}.csv",
         index=False,
@@ -493,7 +493,7 @@ def save_hc_metrics(
         header=[f"k={k}" for k in range(2, max_k + 1)],
     )
 
-     pd.DataFrame(null_calinski_harabasz_scores.T).to_csv(
+    pd.DataFrame(null_calinski_harabasz_scores.T).to_csv(
         project_path
         / f"Results/MA_Clustering/metrics/{meta_name}_NULLcalinski_harabasz_scores_{correlation_type}_hc_{linkage_method}.csv",
         index=False,
