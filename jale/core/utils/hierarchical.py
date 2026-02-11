@@ -302,7 +302,7 @@ def compute_hierarchical_clustering(correlation_matrix, k, linkage_method):
     cluster_labels = fcluster(Z, k, criterion="maxclust")
 
     # Safeguard: If number of cluster labels is smaller than k, set metrics to np.nan
-    if len(np.unique(cluster_labels)) < k:
+    if len(np.unique(cluster_labels)) < 2:
         silhouette = np.nan
         calinski_harabasz = np.nan
     else:
