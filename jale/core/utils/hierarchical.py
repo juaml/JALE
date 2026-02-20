@@ -89,8 +89,10 @@ def hierarchical_clustering_pipeline(
         project_path=project_path,
         meta_name=meta_name,
         silhouette_scores=silhouette_scores,
+        null_silhouette_scores=null_silhouette_scores,
         silhouette_scores_z=silhouette_scores_z,
         calinski_harabasz_scores=calinski_harabasz_scores,
+        null_calinski_harabasz_scores=null_calinski_harabasz_scores,
         calinski_harabasz_scores_z=calinski_harabasz_scores_z,
         exp_separation_density=exp_separation_density,
         correlation_type=correlation_type,
@@ -328,21 +330,21 @@ def compute_hc_metrics_z(
     def pooled_std(sample1, sample2):
         """Compute the pooled standard deviation of two samples."""
         n1, n2 = sample1.shape[1], sample2.shape[1]
-        var1, var2 = np.var(sample1, axis=1, ddof=1), np.var(sample2, axis=1, ddof=1)
+        var1, var2 = np.nanvar(sample1, axis=1, ddof=1), np.nanvar(sample2, axis=1, ddof=1)
         return np.sqrt(((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2))
 
-    silhouette_scores_avg = np.average(silhouette_scores, axis=1)
-    null_silhouette_scores_avg = np.average(null_silhouette_scores, axis=1)
+    silhouette_scores_avg = np.nanmean(silhouette_scores, axis=1)
+    null_silhouette_scores_avg = np.nanmean(null_silhouette_scores, axis=1)
 
     if use_pooled_std:
         silhouette_std = pooled_std(silhouette_scores, null_silhouette_scores)
     else:
-        silhouette_std = np.std(null_silhouette_scores, axis=1, ddof=1)
+        silhouette_std = np.nanstd(null_silhouette_scores, axis=1, ddof=1)
 
     silhouette_z = (silhouette_scores_avg - null_silhouette_scores_avg) / silhouette_std
 
-    calinski_harabasz_scores_avg = np.average(calinski_harabasz_scores, axis=1)
-    null_calinski_harabasz_scores_avg = np.average(
+    calinski_harabasz_scores_avg = np.nanmean(calinski_harabasz_scores, axis=1)
+    null_calinski_harabasz_scores_avg = np.nanmean(
         null_calinski_harabasz_scores, axis=1
     )
 
@@ -351,7 +353,7 @@ def compute_hc_metrics_z(
             calinski_harabasz_scores, null_calinski_harabasz_scores
         )
     else:
-        calinski_harabasz_std = np.std(null_calinski_harabasz_scores, axis=1, ddof=1)
+        calinski_harabasz_std = np.nanstd(null_calinski_harabasz_scores, axis=1, ddof=1)
 
     calinski_harabasz_z = (
         calinski_harabasz_scores_avg - null_calinski_harabasz_scores_avg
@@ -435,8 +437,10 @@ def save_hc_metrics(
     project_path,
     meta_name,
     silhouette_scores,
+    null_silhouette_scores,
     silhouette_scores_z,
     calinski_harabasz_scores,
+    null_calinski_harabasz_scores,
     calinski_harabasz_scores_z,
     exp_separation_density,
     correlation_type,
@@ -446,11 +450,15 @@ def save_hc_metrics(
     metrics_df = pd.DataFrame(
         {
             "Number of Clusters": range(2, max_k + 1),
-            "Silhouette Scores": np.average(silhouette_scores, axis=1),
-            "Silhouette Scores SD": np.std(silhouette_scores, axis=1),
+            "Silhouette Scores": np.nanmean(silhouette_scores, axis=1),
+            "Silhouette Scores SD": np.nanstd(silhouette_scores, axis=1),
+            "Silhouette Score Null": np.nanmean(null_silhouette_scores, axis=1),
+            "Silhouette Scores Null SD": np.nanstd(null_silhouette_scores, axis=1),
             "Silhouette Scores Z": silhouette_scores_z,
-            "Calinski-Harabasz Scores": np.average(calinski_harabasz_scores, axis=1),
-            "Calinski-Harabasz Scores SD": np.std(calinski_harabasz_scores, axis=1),
+            "Calinski-Harabasz Scores": np.nanmean(calinski_harabasz_scores, axis=1),
+            "Calinski-Harabasz Scores Null": np.nanmean(null_calinski_harabasz_scores, axis=1),
+            "Calinski-Harabasz Scoress Null SD": np.nanstd(null_calinski_harabasz_scores, axis=1),
+            "Calinski-Harabasz Scores SD": np.nanstd(calinski_harabasz_scores, axis=1),
             "Calinski-Harabasz Scores Z": calinski_harabasz_scores_z,
             # Pad with NaN for k=2 as metrics start at k=3
             "Experiment Separation Density": np.concatenate(
@@ -471,9 +479,23 @@ def save_hc_metrics(
         header=[f"k={k}" for k in range(2, max_k + 1)],
     )
 
+    pd.DataFrame(null_silhouette_scores.T).to_csv(
+        project_path
+        / f"Results/MA_Clustering/metrics/{meta_name}_Null_silhouette_scores_{correlation_type}_hc_{linkage_method}.csv",
+        index=False,
+        header=[f"k={k}" for k in range(2, max_k + 1)],
+    )
+
     pd.DataFrame(calinski_harabasz_scores.T).to_csv(
         project_path
         / f"Results/MA_Clustering/metrics/{meta_name}_calinski_harabasz_scores_{correlation_type}_hc_{linkage_method}.csv",
+        index=False,
+        header=[f"k={k}" for k in range(2, max_k + 1)],
+    )
+
+    pd.DataFrame(null_calinski_harabasz_scores.T).to_csv(
+        project_path
+        / f"Results/MA_Clustering/metrics/{meta_name}_Null_calinski_harabasz_scores_{correlation_type}_hc_{linkage_method}.csv",
         index=False,
         header=[f"k={k}" for k in range(2, max_k + 1)],
     )
